@@ -1,0 +1,20 @@
+project_id  = "your-gcp-project-id"
+region      = "asia-south1"
+name_prefix = "awxplat"
+
+# Lab: allow your own IP and (temporarily) GitHub-hosted runners to reach the GKE API.
+# GitHub-hosted runner IPs change; for production use a self-hosted runner in the VPC
+# or the Connect Gateway instead of opening the endpoint.
+master_authorized_cidrs = [
+  {
+    cidr         = "203.0.113.10/32" # replace with your public IP
+    display_name = "admin-laptop"
+  },
+]
+
+gke_machine_type = "e2-standard-4"
+gke_min_nodes    = 1
+gke_max_nodes    = 2
+
+db_tier                = "db-custom-2-7680"
+db_deletion_protection = false

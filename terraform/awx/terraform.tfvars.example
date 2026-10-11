@@ -1,0 +1,4 @@
+state_bucket = "your-terraform-state-bucket"
+
+# awx_operator_chart_version = "2.19.1"
+# awx_replicas               = 1

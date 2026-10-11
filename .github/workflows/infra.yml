@@ -1,0 +1,140 @@
+name: infra
+
+# Terraform delivery for the platform (VPC, GKE, Cloud SQL) and AWX stacks.
+# Keyless auth to GCP through Workload Identity Federation (see scripts/bootstrap.sh).
+#
+# Required repository VARIABLES:
+#   GCP_PROJECT_ID, GCP_WIF_PROVIDER, GCP_DEPLOYER_SA, TF_STATE_BUCKET
+# Optional repository VARIABLES:
+#   MASTER_AUTHORIZED_CIDRS  JSON list, e.g. [{"cidr":"203.0.113.10/32","display_name":"admin"}]
+#   RUNNER_LABEL             self-hosted runner label (default: ubuntu-latest)
+
+on:
+  pull_request:
+    paths:
+      - "terraform/**"
+      - ".github/workflows/infra.yml"
+  push:
+    branches: [main]
+    paths:
+      - "terraform/**"
+      - ".github/workflows/infra.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: terraform-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  TF_VERSION: "1.9.8"
+  TF_IN_AUTOMATION: "true"
+  TF_VAR_project_id: ${{ vars.GCP_PROJECT_ID }}
+  TF_VAR_state_bucket: ${{ vars.TF_STATE_BUCKET }}
+  TF_VAR_master_authorized_cidrs: ${{ vars.MASTER_AUTHORIZED_CIDRS || '[]' }}
+
+jobs:
+  validate:
+    name: validate (${{ matrix.stack }})
+    runs-on: ${{ vars.RUNNER_LABEL || 'ubuntu-latest' }}
+    strategy:
+      fail-fast: true
+      matrix:
+        stack: [platform, awx]
+    defaults:
+      run:
+        working-directory: terraform/${{ matrix.stack }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Format check
+        run: terraform fmt -check -recursive -diff
+
+      - name: Init (no backend)
+        run: terraform init -backend=false -input=false
+
+      - name: Validate
+        run: terraform validate
+
+  plan:
+    name: plan (${{ matrix.stack }})
+    needs: validate
+    if: github.event_name == 'pull_request'
+    runs-on: ${{ vars.RUNNER_LABEL || 'ubuntu-latest' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        stack: [platform, awx]
+    # The awx stack reads platform outputs from remote state, so on the very first
+    # PR (before platform is applied) its plan cannot succeed. Do not block on it.
+    continue-on-error: ${{ matrix.stack == 'awx' }}
+    defaults:
+      run:
+        working-directory: terraform/${{ matrix.stack }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_DEPLOYER_SA }}
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Init
+        run: terraform init -input=false -backend-config="bucket=${{ vars.TF_STATE_BUCKET }}"
+
+      - name: Plan
+        run: |
+          set -o pipefail
+          terraform plan -input=false -lock-timeout=5m -no-color | tee plan.txt
+          {
+            echo "### Terraform plan: ${{ matrix.stack }}"
+            echo '```'
+            tail -n 60 plan.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  apply:
+    name: apply (${{ matrix.stack }})
+    needs: validate
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ${{ vars.RUNNER_LABEL || 'ubuntu-latest' }}
+    environment: production # configure required reviewers on this environment
+    strategy:
+      fail-fast: true
+      max-parallel: 1 # platform first, then awx
+      matrix:
+        stack: [platform, awx]
+    defaults:
+      run:
+        working-directory: terraform/${{ matrix.stack }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_DEPLOYER_SA }}
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Init
+        run: terraform init -input=false -backend-config="bucket=${{ vars.TF_STATE_BUCKET }}"
+
+      - name: Plan
+        run: terraform plan -input=false -lock-timeout=5m -out=tfplan
+
+      - name: Apply
+        run: terraform apply -input=false -lock-timeout=5m tfplan
