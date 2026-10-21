@@ -29,4 +29,6 @@ hostnames:
 compose:
   ansible_host: networkInterfaces[0].networkIP
   ansible_user: "'ansible'"
+  ansible_python_interpreter: "'/usr/bin/python3'"
   ansible_ssh_common_args: "'-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'"
+  
