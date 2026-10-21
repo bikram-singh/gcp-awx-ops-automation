@@ -7,6 +7,7 @@ name: infra
 #   GCP_PROJECT_ID, GCP_WIF_PROVIDER, GCP_DEPLOYER_SA, TF_STATE_BUCKET
 # Optional repository VARIABLES:
 #   MASTER_AUTHORIZED_CIDRS  JSON list, e.g. [{"cidr":"203.0.113.10/32","display_name":"admin"}]
+#   SSH_PUBLIC_KEY           public key for the fleet "ansible" user (needed by the fleet stack)
 #   RUNNER_LABEL             self-hosted runner label (default: ubuntu-latest)
 
 on:
@@ -34,6 +35,7 @@ env:
   TF_IN_AUTOMATION: "true"
   TF_VAR_project_id: ${{ vars.GCP_PROJECT_ID }}
   TF_VAR_state_bucket: ${{ vars.TF_STATE_BUCKET }}
+  TF_VAR_ssh_public_key: ${{ vars.SSH_PUBLIC_KEY }}
   TF_VAR_master_authorized_cidrs: ${{ vars.MASTER_AUTHORIZED_CIDRS || '[]' }}
 
 jobs:
@@ -43,7 +45,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        stack: [platform, awx]
+        stack: [platform, awx, fleet]
     defaults:
       run:
         working-directory: terraform/${{ matrix.stack }}
@@ -71,10 +73,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        stack: [platform, awx]
+        stack: [platform, awx, fleet]
     # The awx stack reads platform outputs from remote state, so on the very first
     # PR (before platform is applied) its plan cannot succeed. Do not block on it.
-    continue-on-error: ${{ matrix.stack == 'awx' }}
+    continue-on-error: ${{ matrix.stack != 'platform' }}
     defaults:
       run:
         working-directory: terraform/${{ matrix.stack }}
@@ -114,7 +116,7 @@ jobs:
       fail-fast: true
       max-parallel: 1 # platform first, then awx
       matrix:
-        stack: [platform, awx]
+        stack: [platform, awx, fleet]
     defaults:
       run:
         working-directory: terraform/${{ matrix.stack }}

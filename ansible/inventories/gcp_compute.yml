@@ -1,0 +1,32 @@
+---
+# Dynamic inventory from the GCE API.
+# In AWX this file is used by an Inventory Source of type "Sourced from a Project";
+# the Google Compute Engine credential supplies GCP_SERVICE_ACCOUNT_FILE and GCP_AUTH_KIND.
+plugin: google.cloud.gcp_compute
+
+projects:
+  - gcp-awx-ops          # change if you use another project
+
+auth_kind: serviceaccount
+
+filters:
+  - status = RUNNING
+  - labels.managed_by = terraform
+
+# One group per label value: env_dev, env_prod, role_web, role_app, role_db, patch_a, patch_b
+keyed_groups:
+  - key: labels.env
+    prefix: env
+  - key: labels.role
+    prefix: role
+  - key: labels.patch_group
+    prefix: patch
+
+hostnames:
+  - name
+
+# Fleet VMs have no public IP, so connect to the private address.
+compose:
+  ansible_host: networkInterfaces[0].networkIP
+  ansible_user: "'ansible'"
+  ansible_ssh_common_args: "'-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'"

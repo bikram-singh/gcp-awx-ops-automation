@@ -1,0 +1,78 @@
+---
+# Daily health and capacity report. Read-only: changes nothing on the hosts.
+# Extra vars (all optional):
+#   target_hosts      inventory pattern, e.g. env_prod or role_web   (default: all)
+#   disk_warn_percent threshold for any mounted filesystem           (default: 80)
+#   mem_warn_percent  threshold for used memory excluding cache      (default: 90)
+#   load_warn_per_cpu 5-minute load average per vCPU                 (default: 1.5)
+#   fail_on_issues    fail the job if any host has a finding         (default: false)
+- name: Health and capacity check
+  hosts: "{{ target_hosts | default('all') }}"
+  gather_facts: true
+  vars:
+    disk_warn_percent: 80
+    mem_warn_percent: 90
+    load_warn_per_cpu: 1.5
+    fail_on_issues: false
+  tasks:
+    - name: List failed systemd units
+      ansible.builtin.command: systemctl --failed --no-legend --plain  # noqa: command-instead-of-module
+      register: failed_units
+      changed_when: false
+      failed_when: false
+      check_mode: false  # read-only, so safe (and needed) in check mode
+
+    - name: Collect filesystems above the disk threshold
+      ansible.builtin.set_fact:
+        disk_issues: "{{ disk_issues | default([]) + [m['mount'] ~ ' at ' ~ pct ~ '% used'] }}"
+      loop: "{{ ansible_facts['mounts'] }}"
+      loop_control:
+        loop_var: m
+        label: "{{ m['mount'] }}"
+      vars:
+        pct: "{{ ((m['size_total'] - m['size_available']) / m['size_total'] * 100) | round(1) }}"
+      when:
+        - m['size_total'] > 0
+        - m['fstype'] in ['ext4', 'xfs', 'btrfs']
+        - pct | float >= disk_warn_percent | float
+
+    - name: Evaluate memory, load and services
+      ansible.builtin.set_fact:
+        mem_pct: "{{ (ansible_facts['memory_mb']['nocache']['used'] / ansible_facts['memory_mb']['real']['total'] * 100) | round(1) }}"
+        load_per_cpu: "{{ (ansible_facts['loadavg']['5m'] / ansible_facts['processor_vcpus']) | round(2) }}"
+        failed_unit_list: "{{ failed_units.stdout_lines | default([]) }}"
+
+    - name: Build the host summary
+      ansible.builtin.set_fact:
+        health_summary:
+          host: "{{ inventory_hostname }}"
+          status: "{{ 'WARN' if issues | length > 0 else 'OK' }}"
+          mem_used_percent: "{{ mem_pct }}"
+          load_per_cpu: "{{ load_per_cpu }}"
+          uptime_hours: "{{ (ansible_facts['uptime_seconds'] / 3600) | round(1) }}"
+          issues: "{{ issues }}"
+      vars:
+        issues: >-
+          {{
+            (disk_issues | default([]))
+            + ([('memory at ' ~ mem_pct ~ '% used')] if mem_pct | float >= mem_warn_percent | float else [])
+            + ([('load ' ~ load_per_cpu ~ ' per vCPU')] if load_per_cpu | float >= load_warn_per_cpu | float else [])
+            + (failed_unit_list | map('regex_replace', '^\s*(\S+).*$', 'failed unit: \1') | list)
+          }}
+
+    - name: Report
+      ansible.builtin.debug:
+        msg: "{{ health_summary }}"
+
+    - name: Publish the combined report as job artifacts
+      ansible.builtin.set_stats:
+        data:
+          health_report: "{{ ansible_play_hosts | map('extract', hostvars, 'health_summary') | list }}"
+      run_once: true  # noqa: run-once[task]
+
+    - name: Fail when requested and a finding exists
+      ansible.builtin.fail:
+        msg: "{{ inventory_hostname }}: {{ health_summary['issues'] | join('; ') }}"
+      when:
+        - fail_on_issues | bool
+        - health_summary['issues'] | length > 0

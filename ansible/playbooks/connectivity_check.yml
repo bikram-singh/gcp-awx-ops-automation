@@ -1,0 +1,21 @@
+---
+# Smoke test: can AWX reach every host over SSH, escalate to root and gather facts?
+- name: Connectivity and privilege check
+  hosts: "{{ target_hosts | default('all') }}"
+  gather_facts: true
+  tasks:
+    - name: Ping over SSH
+      ansible.builtin.ping:
+
+    - name: Confirm sudo works
+      ansible.builtin.command: whoami
+      become: true
+      register: whoami_result
+      changed_when: false
+
+    - name: Show what AWX sees
+      ansible.builtin.debug:
+        msg: >-
+          {{ inventory_hostname }} ({{ ansible_facts['default_ipv4']['address'] | default('n/a') }})
+          {{ ansible_facts['distribution'] }} {{ ansible_facts['distribution_version'] }},
+          sudo user: {{ whoami_result.stdout }}

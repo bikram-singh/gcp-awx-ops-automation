@@ -1,0 +1,6 @@
+state_bucket = "gcp-awx-ops-tfstate"
+
+# Paste the contents of your public key file (for example ~/.ssh/awx_fleet.pub).
+ssh_public_key = "ssh-ed25519 AAAA... ansible@awx"
+
+# vm_machine_type = "e2-small"

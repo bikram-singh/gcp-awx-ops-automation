@@ -1,0 +1,5 @@
+---
+# Collections installed by AWX when the project syncs. AWX only reads this file at the repo root.
+collections:
+  - name: google.cloud
+  - name: ansible.posix

@@ -1,0 +1,96 @@
+---
+# Rolling OS patching for Debian/Ubuntu and RHEL-family hosts.
+# Hosts are patched in batches; the play stops if too many hosts in a batch fail.
+# Use the job template's "Check mode" option for a dry run.
+# Extra vars (all optional):
+#   target_hosts             inventory pattern, e.g. patch_a or env_dev   (default: all)
+#   patch_batch_size         hosts per batch, number or percent            (default: 50%)
+#   patch_max_fail_percent   abort the play above this failure rate        (default: 0)
+#   patch_reboot             auto | always | never                         (default: auto)
+#   patch_min_free_mb        minimum free space on / before patching       (default: 1024)
+- name: Rolling OS patching
+  hosts: "{{ target_hosts | default('all') }}"
+  become: true
+  gather_facts: true
+  serial: "{{ patch_batch_size | default('50%') }}"
+  max_fail_percentage: "{{ patch_max_fail_percent | default(0) }}"
+  vars:
+    patch_reboot: auto
+    patch_min_free_mb: 1024
+  pre_tasks:
+    - name: Check free space on /
+      ansible.builtin.assert:
+        that:
+          - (ansible_facts['mounts'] | selectattr('mount', 'equalto', '/') | map(attribute='size_available') | first) / 1048576 > patch_min_free_mb | int
+        fail_msg: "Less than {{ patch_min_free_mb }} MB free on / ; refusing to patch {{ inventory_hostname }}"
+        quiet: true
+
+    - name: Record failed systemd units before patching
+      ansible.builtin.command: systemctl --failed --no-legend --plain  # noqa: command-instead-of-module
+      register: failed_before
+      changed_when: false
+      failed_when: false
+      check_mode: false  # read-only, so safe (and needed) in check mode
+
+  tasks:
+    - name: Upgrade packages (Debian family)
+      ansible.builtin.apt:
+        update_cache: true
+        upgrade: dist
+        autoremove: true
+      environment:
+        DEBIAN_FRONTEND: noninteractive
+      register: apt_result
+      when: ansible_facts['os_family'] == 'Debian'
+
+    - name: Upgrade packages (RedHat family)  # noqa: package-latest
+      ansible.builtin.dnf:
+        name: "*"
+        state: latest
+        update_cache: true
+      register: dnf_result
+      when: ansible_facts['os_family'] == 'RedHat'
+
+    - name: Check for the reboot-required flag
+      ansible.builtin.stat:
+        path: /var/run/reboot-required
+      register: reboot_flag
+
+    - name: Decide whether a reboot is needed
+      ansible.builtin.set_fact:
+        needs_reboot: >-
+          {{
+            patch_reboot == 'always'
+            or (patch_reboot == 'auto' and (
+                  reboot_flag.stat.exists
+                  or 'linux-image' in (apt_result.stdout | default(''))
+                  or 'kernel' in (dnf_result.results | default([]) | map('string') | join(' '))
+               ))
+          }}
+
+    - name: Reboot and wait for the host to return
+      ansible.builtin.reboot:
+        reboot_timeout: 900
+        msg: "Rebooted by AWX patching job"
+      when: needs_reboot | bool
+
+  post_tasks:
+    - name: Record failed systemd units after patching
+      ansible.builtin.command: systemctl --failed --no-legend --plain  # noqa: command-instead-of-module
+      register: failed_after
+      changed_when: false
+      failed_when: false
+      check_mode: false  # read-only, so safe (and needed) in check mode
+
+    - name: Verify patching did not break any service
+      ansible.builtin.assert:
+        that:
+          - (failed_after.stdout_lines | difference(failed_before.stdout_lines)) | length == 0
+        fail_msg: >-
+          New failed units after patching {{ inventory_hostname }}:
+          {{ failed_after.stdout_lines | difference(failed_before.stdout_lines) }}
+        quiet: true
+
+    - name: Summarise
+      ansible.builtin.debug:
+        msg: "{{ inventory_hostname }} patched; rebooted: {{ needs_reboot | bool }}"

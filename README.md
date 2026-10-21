@@ -33,8 +33,10 @@ Full design: [docs/HLD.md](docs/HLD.md)
 .
 ├── terraform/
 │   ├── platform/      VPC, NAT, firewall, private GKE, Cloud SQL, Secret Manager   (stack 1)
-│   └── awx/           AWX Operator (Helm) + AWX instance                           (stack 2)
-├── ansible/           roles, playbooks, inventories                                (phase 2+)
+│   ├── awx/           AWX Operator (Helm) + AWX instance                           (stack 2)
+│   └── fleet/         Labelled private VMs + read-only inventory service account   (stack 3)
+├── ansible/           playbooks, GCE dynamic inventory                             (phase 2+)
+├── collections/       requirements.yml read by AWX on project sync
 ├── awx-config/        templates, schedules, workflows as YAML                      (phase 4)
 ├── execution-env/     ansible-builder definition                                   (phase 3)
 ├── functions/         Cloud Function: alert -> AWX webhook                         (phase 6)
@@ -86,7 +88,7 @@ Prerequisites: a GCP project with billing, `gcloud`, `terraform >= 1.6`, a GitHu
 ## Roadmap
 
 - [x] Phase 1: Foundation (VPC, GKE, Cloud SQL, AWX)
-- [ ] Phase 2: VM fleet with labels, GCE dynamic inventory, IAP machine credential
+- [ ] Phase 2 (code written, pending first run): VM fleet with labels, GCE dynamic inventory, first playbooks (see [docs/PHASE2.md](docs/PHASE2.md))
 - [ ] Phase 3: Core roles (patching, CIS hardening, health check) + Molecule + custom EE
 - [ ] Phase 4: AWX config-as-code + CI pipelines
 - [ ] Phase 5: Patching workflow (pre-check, snapshot, patch, verify, notify) with approval
