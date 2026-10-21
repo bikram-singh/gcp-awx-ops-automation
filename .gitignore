@@ -13,3 +13,4 @@ sa-key*.json
 __pycache__/
 .venv/
 .DS_Store
+SS.docx

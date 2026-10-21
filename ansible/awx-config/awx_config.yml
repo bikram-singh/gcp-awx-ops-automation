@@ -1,0 +1,61 @@
+---
+# Desired state of AWX. Edit this file, push to main, and the awx-config workflow applies it.
+# Everything here is idempotent: the names match what you created by hand, so the first run adopts them.
+
+awx_organization: Default
+
+awx_credential:
+  name: fleet-ssh
+  username: ansible
+  # The private key is never stored in Git. It comes from the FLEET_SSH_PRIVATE_KEY repository secret.
+  # If the secret is not set, the credential is left as it is (it must already exist).
+
+awx_project:
+  name: awx-ops-playbooks
+  scm_url: https://github.com/bikram-singh/gcp-awx-ops-automation.git
+  scm_branch: main
+  update_on_launch: true
+
+awx_inventory:
+  name: gcp-fleet
+  description: GCE VMs labelled ansible_managed=true, grouped by env, role and patch group
+  source:
+    name: gce-dynamic
+    source_path: ansible/inventories/gcp_compute.yml
+
+awx_templates:
+  - name: "00 Connectivity check"
+    description: Proves AWX can log in to every managed VM
+    playbook: ansible/playbooks/connectivity_check.yml
+    ask_limit: true
+    ask_variables: true
+
+  - name: "10 Health check"
+    description: Read-only disk, memory, load and failed-service report
+    playbook: ansible/playbooks/health_check.yml
+    verbosity: 1
+    ask_limit: true
+    ask_variables: true
+
+  - name: "20 Patch Linux (rolling)"
+    description: Rolling OS patching with reboot handling and a post-patch service check
+    playbook: ansible/playbooks/patch_linux.yml
+    ask_limit: true
+    ask_variables: true
+
+  - name: "21 Patch Linux DEV (dry run)"
+    description: Check mode against env_dev, one host at a time. Safe to run any time
+    playbook: ansible/playbooks/patch_linux.yml
+    job_type: check
+    limit: env_dev
+    extra_vars:
+      patch_batch_size: 1
+      patch_max_fail_percent: 0
+    ask_limit: true
+    ask_variables: true
+
+awx_schedules:
+  - name: Daily health check 02:00 UTC
+    template: "10 Health check"
+    rrule: "DTSTART:20261022T020000Z RRULE:FREQ=DAILY;INTERVAL=1"
+    enabled: true

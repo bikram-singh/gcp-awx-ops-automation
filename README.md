@@ -37,7 +37,7 @@ Full design: [docs/HLD.md](docs/HLD.md)
 │   └── fleet/         Labelled private VMs + read-only inventory service account   (stack 3)
 ├── ansible/           playbooks, GCE dynamic inventory                             (phase 2+)
 ├── collections/       requirements.yml read by AWX on project sync
-├── awx-config/        templates, schedules, workflows as YAML                      (phase 4)
+├── ansible/awx-config/ AWX configuration as code + job launcher                    (phase 4)
 ├── execution-env/     ansible-builder definition                                   (phase 3)
 ├── functions/         Cloud Function: alert -> AWX webhook                         (phase 6)
 ├── scripts/bootstrap.sh   one-time: state bucket + Workload Identity Federation
@@ -88,9 +88,9 @@ Prerequisites: a GCP project with billing, `gcloud`, `terraform >= 1.6`, a GitHu
 ## Roadmap
 
 - [x] Phase 1: Foundation (VPC, GKE, Cloud SQL, AWX)
-- [ ] Phase 2 (code written, pending first run): VM fleet with labels, GCE dynamic inventory, first playbooks (see [docs/PHASE2.md](docs/PHASE2.md))
+- [x] Phase 2: VM fleet with labels, GCE dynamic inventory, first playbooks (see [docs/PHASE2.md](docs/PHASE2.md))
 - [ ] Phase 3: Core roles (patching, CIS hardening, health check) + Molecule + custom EE
-- [ ] Phase 4: AWX config-as-code + CI pipelines
+- [ ] Phase 4 (code written, pending first run): AWX config-as-code + workflows that apply it and launch jobs (see [docs/PHASE4.md](docs/PHASE4.md))
 - [ ] Phase 5: Patching workflow (pre-check, snapshot, patch, verify, notify) with approval
 - [ ] Phase 6: Self-healing (alert -> Pub/Sub -> webhook) and provisioning callback
 - [ ] Phase 7: RBAC, notifications, daily report, docs, demo, article

@@ -1,0 +1,29 @@
+---
+# Launches an AWX job template and waits for it to finish. Used by the ops-trigger workflow.
+# Variables: template (required), limit (optional), launch_extra_vars (optional JSON string).
+- name: Launch an AWX job template
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    limit: ""
+    launch_extra_vars: "{}"
+  tasks:
+    - name: Require a template name
+      ansible.builtin.assert:
+        that: template is defined and template | length > 0
+        fail_msg: Pass -e template="<job template name>"
+        quiet: true
+
+    - name: Launch and wait
+      awx.awx.job_launch:
+        job_template: "{{ template }}"
+        limit: "{{ limit | default(omit, true) }}"
+        extra_vars: "{{ launch_extra_vars | from_json }}"
+        wait: true
+        timeout: 3600
+      register: job
+
+    - name: Result
+      ansible.builtin.debug:
+        msg: "Job {{ job.id }} finished with status {{ job.status }}"

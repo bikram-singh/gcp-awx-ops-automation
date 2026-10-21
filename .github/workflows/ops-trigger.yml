@@ -1,0 +1,64 @@
+name: ops-trigger
+
+# Launch an AWX job template from GitHub and wait for the result.
+# Run it from the Actions tab, or call it from other workflows. The job fails if the AWX job fails.
+
+on:
+  workflow_dispatch:
+    inputs:
+      template:
+        description: AWX job template
+        type: choice
+        required: true
+        default: "10 Health check"
+        options:
+          - "00 Connectivity check"
+          - "10 Health check"
+          - "21 Patch Linux DEV (dry run)"
+          - "20 Patch Linux (rolling)"
+      limit:
+        description: "Hosts to target (all, env_dev, env_prod, role_web, patch_a ...)"
+        type: string
+        default: env_dev
+      extra_vars:
+        description: Extra variables as JSON
+        type: string
+        default: "{}"
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  launch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    # Real patching needs a reviewer on the production environment; read-only templates do not.
+    environment: ${{ inputs.template == '20 Patch Linux (rolling)' && 'production' || '' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/awx-connect
+        with:
+          wif_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_DEPLOYER_SA }}
+          cluster: ${{ vars.GKE_CLUSTER || 'awxplat-gke' }}
+          location: ${{ vars.GCP_REGION || 'asia-south1' }}
+
+      - name: Launch the template and wait
+        env:
+          TEMPLATE: ${{ inputs.template }}
+          LIMIT: ${{ inputs.limit }}
+          EXTRA_VARS: ${{ inputs.extra_vars }}
+        run: |
+          set -o pipefail
+          ansible-playbook ansible/awx-config/launch.yml \
+            -e "template=${TEMPLATE}" \
+            -e "limit=${LIMIT}" \
+            -e "launch_extra_vars=${EXTRA_VARS}" | tee launch.txt
+          {
+            echo "### AWX job"
+            echo "- Template: \`${TEMPLATE}\`"
+            echo "- Limit: \`${LIMIT}\`"
+            grep -E "finished with status" launch.txt | sed 's/^ *//' || true
+          } >> "$GITHUB_STEP_SUMMARY"

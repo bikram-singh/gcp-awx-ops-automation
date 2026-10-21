@@ -1,0 +1,96 @@
+---
+# Applies awx_config.yml to a running AWX through its API (awx.awx collection).
+# Connection settings come from the environment: CONTROLLER_HOST, CONTROLLER_USERNAME,
+# CONTROLLER_PASSWORD, CONTROLLER_VERIFY_SSL. The awx-config workflow sets them.
+- name: Configure AWX from code
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars_files:
+    - awx_config.yml
+  tasks:
+    - name: Make sure the AWX connection settings are present
+      ansible.builtin.assert:
+        that:
+          - lookup('ansible.builtin.env', 'CONTROLLER_HOST') | length > 0
+          - lookup('ansible.builtin.env', 'CONTROLLER_PASSWORD') | length > 0
+        fail_msg: Set CONTROLLER_HOST, CONTROLLER_USERNAME and CONTROLLER_PASSWORD first
+        quiet: true
+
+    - name: SSH credential for the fleet (only when the key is supplied)
+      awx.awx.credential:
+        name: "{{ awx_credential.name }}"
+        organization: "{{ awx_organization }}"
+        credential_type: Machine
+        description: Key for the ansible user on the managed VMs
+        inputs:
+          username: "{{ awx_credential.username }}"
+          ssh_key_data: "{{ lookup('ansible.builtin.env', 'FLEET_SSH_PRIVATE_KEY') }}"
+        update_secrets: false
+        state: present
+      when: lookup('ansible.builtin.env', 'FLEET_SSH_PRIVATE_KEY') | length > 0
+      no_log: true
+
+    - name: Project that holds the playbooks
+      awx.awx.project:
+        name: "{{ awx_project.name }}"
+        organization: "{{ awx_organization }}"
+        scm_type: git
+        scm_url: "{{ awx_project.scm_url }}"
+        scm_branch: "{{ awx_project.scm_branch }}"
+        scm_update_on_launch: "{{ awx_project.update_on_launch }}"
+        wait: true
+        state: present
+
+    - name: Inventory
+      awx.awx.inventory:
+        name: "{{ awx_inventory.name }}"
+        organization: "{{ awx_organization }}"
+        description: "{{ awx_inventory.description }}"
+        state: present
+
+    - name: Dynamic inventory source (from the project, keyless through Workload Identity)
+      awx.awx.inventory_source:
+        name: "{{ awx_inventory.source.name }}"
+        inventory: "{{ awx_inventory.name }}"
+        organization: "{{ awx_organization }}"
+        source: scm
+        source_project: "{{ awx_project.name }}"
+        source_path: "{{ awx_inventory.source.source_path }}"
+        overwrite: true
+        overwrite_vars: true
+        update_on_launch: true
+        state: present
+
+    - name: Job templates
+      awx.awx.job_template:
+        name: "{{ item.name }}"
+        description: "{{ item.description | default('') }}"
+        organization: "{{ awx_organization }}"
+        job_type: "{{ item.job_type | default('run') }}"
+        inventory: "{{ awx_inventory.name }}"
+        project: "{{ awx_project.name }}"
+        playbook: "{{ item.playbook }}"
+        credentials:
+          - "{{ awx_credential.name }}"
+        limit: "{{ item.limit | default(omit) }}"
+        extra_vars: "{{ item.extra_vars | default(omit) }}"
+        verbosity: "{{ item.verbosity | default(0) }}"
+        ask_limit_on_launch: "{{ item.ask_limit | default(false) }}"
+        ask_variables_on_launch: "{{ item.ask_variables | default(false) }}"
+        ask_inventory_on_launch: false
+        state: present
+      loop: "{{ awx_templates }}"
+      loop_control:
+        label: "{{ item.name }}"
+
+    - name: Schedules
+      awx.awx.schedule:
+        name: "{{ item.name }}"
+        unified_job_template: "{{ item.template }}"
+        rrule: "{{ item.rrule }}"
+        enabled: "{{ item.enabled | default(true) }}"
+        state: present
+      loop: "{{ awx_schedules | default([]) }}"
+      loop_control:
+        label: "{{ item.name }}"

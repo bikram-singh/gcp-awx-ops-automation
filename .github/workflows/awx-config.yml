@@ -1,0 +1,48 @@
+name: awx-config
+
+# Applies ansible/awx-config/awx_config.yml to AWX: credential, project, inventory, templates, schedules.
+# AWX runs in a private cluster, so the job opens a kubectl tunnel to the service (see the awx-connect action).
+#
+# Required repository VARIABLES: GCP_WIF_PROVIDER, GCP_DEPLOYER_SA
+# Optional VARIABLES: GKE_CLUSTER (default awxplat-gke), GCP_REGION (default asia-south1)
+# Optional SECRET:    FLEET_SSH_PRIVATE_KEY (creates or keeps the fleet-ssh credential in step with Git)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "ansible/awx-config/**"
+      - ".github/actions/awx-connect/**"
+      - ".github/workflows/awx-config.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: awx-config
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/awx-connect
+        with:
+          wif_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_DEPLOYER_SA }}
+          cluster: ${{ vars.GKE_CLUSTER || 'awxplat-gke' }}
+          location: ${{ vars.GCP_REGION || 'asia-south1' }}
+
+      - name: Apply AWX configuration
+        env:
+          FLEET_SSH_PRIVATE_KEY: ${{ secrets.FLEET_SSH_PRIVATE_KEY }}
+        run: ansible-playbook ansible/awx-config/configure.yml
+
+      - name: Summary
+        if: success()
+        run: echo "AWX configuration applied from ${GITHUB_SHA::7}" >> "$GITHUB_STEP_SUMMARY"
