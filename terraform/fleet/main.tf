@@ -62,9 +62,10 @@ resource "google_compute_instance" "fleet" {
   tags = ["ansible-managed", each.value.role]
 
   labels = merge(var.labels, {
-    env         = each.value.env
-    role        = each.value.role
-    patch_group = each.value.patch_group
+    env             = each.value.env
+    role            = each.value.role
+    patch_group     = each.value.patch_group
+    ansible_managed = "true"
   })
 
   boot_disk {

@@ -11,7 +11,7 @@ auth_kind: serviceaccount
 
 filters:
   - status = RUNNING
-  - labels.managed_by = terraform
+  - labels.ansible_managed = true
 
 # One group per label value: env_dev, env_prod, role_web, role_app, role_db, patch_a, patch_b
 keyed_groups:
