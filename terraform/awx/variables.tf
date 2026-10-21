@@ -12,7 +12,7 @@ variable "awx_namespace" {
 variable "awx_operator_chart_version" {
   description = "Version of the awx-operator Helm chart. Pin it; check the chart repo for the latest."
   type        = string
-  default     = "2.19.1"
+  default     = "3.2.1"
 }
 
 variable "kube_rbac_proxy_image" {
