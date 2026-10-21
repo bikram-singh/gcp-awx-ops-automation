@@ -91,8 +91,9 @@ resource "google_container_node_pool" "awx" {
   cluster  = google_container_cluster.awx.name
 
   autoscaling {
-    min_node_count = var.gke_min_nodes
-    max_node_count = var.gke_max_nodes
+    total_min_node_count = var.gke_min_nodes
+    total_max_node_count = var.gke_max_nodes
+    location_policy      = "BALANCED"
   }
 
   management {
