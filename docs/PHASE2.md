@@ -36,31 +36,34 @@ Check the result:
 gcloud compute instances list --project gcp-awx-ops --format="table(name,zone.basename(),networkInterfaces[0].networkIP,labels)"
 ```
 
-## 3. Create a key for the inventory service account
+## 3. Inventory access without keys (Workload Identity)
+
+Your organization blocks service account keys (`iam.managed.disableServiceAccountKeyCreation`), so the inventory sync uses Workload Identity instead. Nothing to create by hand:
+
+- the `fleet` stack creates `awx-inventory@gcp-awx-ops.iam.gserviceaccount.com` (read-only, `compute.viewer`) and allows the AWX Kubernetes service accounts `awx/default` and `awx/awx` to act as it;
+- the `awx` stack annotates the `default` Kubernetes service account in the `awx` namespace, which AWX job pods use.
+
+Apply both stacks (push and approve the pipeline) before you sync the inventory. If the sync later says it cannot find credentials, also annotate the `awx` service account and restart the task pod:
 
 ```powershell
-gcloud iam service-accounts keys create awx-inventory-key.json --iam-account=awx-inventory@gcp-awx-ops.iam.gserviceaccount.com
+kubectl -n awx annotate serviceaccount awx iam.gke.io/gcp-service-account=awx-inventory@gcp-awx-ops.iam.gserviceaccount.com --overwrite
+kubectl -n awx rollout restart deployment awx-task
 ```
-
-Keep this file out of Git (`*key*.json` is not ignored by default, so store it outside the repo folder, then delete it after you upload it to AWX).
-
-If this command is refused with a policy error about service account key creation, your organization blocks keys. Tell me and I will switch the inventory to Workload Identity.
 
 ## 4. Configure AWX (UI)
 
 Open AWX at http://localhost:8080 (`kubectl -n awx port-forward svc/awx-service 8080:80`).
 
 1. **Credentials, Add** (`fleet-ssh`): type **Machine**, username `ansible`, paste the private key. Leave privilege escalation empty (the playbooks set `become` themselves).
-2. **Credentials, Add** (`gcp-inventory`): type **Google Compute Engine**, upload `awx-inventory-key.json`. AWX fills in the email, project and key.
-3. **Projects, Add** (`awx-ops-playbooks`): source control type Git, URL `https://github.com/bikram-singh/gcp-awx-ops-automation.git`, branch `main`. Tick **Update revision on job launch**. Save and wait for the project to show a green status.
-4. **Inventories, Add** (`gcp-fleet`), then open it, **Sources, Add**:
+2. **Projects, Add** (`awx-ops-playbooks`): source control type Git, URL `https://github.com/bikram-singh/gcp-awx-ops-automation.git`, branch `main`. Tick **Update revision on job launch**. Save and wait for the project to show a green status.
+3. **Inventories, Add** (`gcp-fleet`), then open it, **Sources, Add**:
    - Source: **Sourced from a Project**
    - Project: `awx-ops-playbooks`
    - Inventory file: `ansible/inventories/gcp_compute.yml`
-   - Credential: `gcp-inventory`
+   - Credential: none (Workload Identity is used)
    - Options: Overwrite, Overwrite variables, Update on launch
    - Save and click **Sync**. In **Hosts** you should see the 6 VMs, and in **Groups** the label groups.
-5. **Templates, Add job template**, three times. For each: inventory `gcp-fleet`, project `awx-ops-playbooks`, credential `fleet-ssh`, and tick **Prompt on launch** for Limit and Variables.
+4. **Templates, Add job template**, three times. For each: inventory `gcp-fleet`, project `awx-ops-playbooks`, credential `fleet-ssh`, and tick **Prompt on launch** for Limit and Variables.
 
    | Name | Playbook |
    |---|---|
@@ -81,7 +84,8 @@ Useful extra vars: `{"patch_batch_size": 1, "patch_max_fail_percent": 0, "patch_
 | Symptom | Likely cause |
 |---|---|
 | Inventory sync fails with an import error for `google.auth` or `requests` | The default execution environment lacks the GCP Python libraries. Phase 3 builds a custom execution environment; ask me and I will bring that forward |
-| Inventory sync returns 0 hosts | VMs not running, or the labels do not match the filters in `gcp_compute.yml` (`status = RUNNING`, `labels.managed_by = terraform`) |
+| Inventory sync: `could not automatically find credentials` or a 403 | The job pod is not mapped to the inventory service account. See step 3: annotate the `awx` service account and restart `awx-task` |
+| Inventory sync returns 0 hosts | VMs not running, or the labels do not match the filters in `gcp_compute.yml` (`status = RUNNING`, `labels.ansible_managed = true`) |
 | SSH timeout to hosts | Firewall `allow_internal` must allow the pod range (it does by default); check the VM is running and has an IP |
 | SSH permission denied | Wrong private key in `fleet-ssh`, or `ssh_public_key` in Terraform was different. Re-apply with the right key and reboot or `sudo google_metadata_script_runner startup` |
 | Project sync fails on collections | Galaxy not reachable from the cluster; check Cloud NAT is up |

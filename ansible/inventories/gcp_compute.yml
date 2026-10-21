@@ -1,17 +1,17 @@
 ---
 # Dynamic inventory from the GCE API.
 # In AWX this file is used by an Inventory Source of type "Sourced from a Project";
-# the Google Compute Engine credential supplies GCP_SERVICE_ACCOUNT_FILE and GCP_AUTH_KIND.
+# No credential is attached: the job pod uses Workload Identity (application default credentials).
 plugin: google.cloud.gcp_compute
 
 projects:
   - gcp-awx-ops          # change if you use another project
 
-auth_kind: serviceaccount
+auth_kind: application
 
 filters:
   - status = RUNNING
-  - labels.ansible_managed = true
+  - labels.ansible_managed = true   # excludes other VMs, such as the GKE node
 
 # One group per label value: env_dev, env_prod, role_web, role_app, role_db, patch_a, patch_b
 keyed_groups:

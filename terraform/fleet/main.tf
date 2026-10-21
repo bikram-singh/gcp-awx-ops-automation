@@ -39,8 +39,7 @@ resource "google_project_iam_member" "vm" {
   member  = "serviceAccount:${google_service_account.vm.email}"
 }
 
-# Read-only identity for the AWX GCE inventory sync (compute.viewer only).
-# Create a key for it manually and paste it into an AWX credential; see docs/PHASE2.md.
+# Read-only identity for the AWX GCE inventory sync (compute.viewer only), used keylessly via Workload Identity.
 resource "google_service_account" "awx_inventory" {
   account_id   = "awx-inventory"
   display_name = "AWX dynamic inventory (read-only)"
@@ -50,6 +49,16 @@ resource "google_project_iam_member" "awx_inventory" {
   project = local.project_id
   role    = "roles/compute.viewer"
   member  = "serviceAccount:${google_service_account.awx_inventory.email}"
+}
+
+# Workload Identity: AWX job pods (Kubernetes service accounts in the awx namespace) act as
+# the inventory service account without any key. The org policy blocks key creation anyway.
+resource "google_service_account_iam_member" "awx_inventory_workload_identity" {
+  for_each = toset(["default", "awx"])
+
+  service_account_id = google_service_account.awx_inventory.name
+  role               = "roles/iam.workloadIdentityUser"
+  member             = "serviceAccount:${local.project_id}.svc.id.goog[awx/${each.value}]"
 }
 
 resource "google_compute_instance" "fleet" {

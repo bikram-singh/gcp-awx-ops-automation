@@ -38,19 +38,6 @@ resource "helm_release" "awx_operator" {
 
   wait    = true
   timeout = 600
-
-  # The chart's default sidecar image (gcr.io/kubebuilder/kube-rbac-proxy) no longer
-  # exists, which leaves the operator pod in ImagePullBackOff. Override it.
-  values = [
-    yamlencode({
-      "operator-controller-containers" = {
-        "kube-rbac-proxy" = {
-          image = var.kube_rbac_proxy_image
-        }
-      }
-    })
-  ]
-
 }
 
 resource "kubectl_manifest" "awx" {
@@ -89,4 +76,22 @@ resource "kubectl_manifest" "awx" {
     helm_release.awx_operator,
     kubernetes_secret.awx_postgres,
   ]
+}
+
+# Workload Identity: map the namespace's default Kubernetes service account (used by AWX job pods)
+# to the read-only inventory service account created in the fleet stack.
+resource "kubernetes_annotations" "default_sa" {
+  api_version = "v1"
+  kind        = "ServiceAccount"
+
+  metadata {
+    name      = "default"
+    namespace = kubernetes_namespace.awx.metadata[0].name
+  }
+
+  annotations = {
+    "iam.gke.io/gcp-service-account" = "awx-inventory@${local.platform.project_id}.iam.gserviceaccount.com"
+  }
+
+  force = true
 }
