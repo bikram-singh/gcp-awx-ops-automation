@@ -51,7 +51,7 @@ Prerequisites: a GCP project with billing, `gcloud`, `terraform >= 1.6`, a GitHu
 
    ```bash
    export PROJECT_ID=your-project-id
-   export GITHUB_REPO=bikram-singh/ansible-tower-gcp-platform
+   export GITHUB_REPO=bikram-singh/gcp-awx-ops-automation
    ./scripts/bootstrap.sh
    ```
 
