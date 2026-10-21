@@ -38,6 +38,19 @@ resource "helm_release" "awx_operator" {
 
   wait    = true
   timeout = 600
+
+  # The chart's default sidecar image (gcr.io/kubebuilder/kube-rbac-proxy) no longer
+  # exists, which leaves the operator pod in ImagePullBackOff. Override it.
+  values = [
+    yamlencode({
+      "operator-controller-containers" = {
+        "kube-rbac-proxy" = {
+          image = var.kube_rbac_proxy_image
+        }
+      }
+    })
+  ]
+
 }
 
 resource "kubectl_manifest" "awx" {

@@ -15,6 +15,12 @@ variable "awx_operator_chart_version" {
   default     = "2.19.1"
 }
 
+variable "kube_rbac_proxy_image" {
+  description = "Image for the operator's kube-rbac-proxy sidecar. The chart default on gcr.io/kubebuilder was removed."
+  type        = string
+  default     = "quay.io/brancz/kube-rbac-proxy:v0.15.0"
+}
+
 variable "awx_admin_user" {
   description = "AWX admin username."
   type        = string
