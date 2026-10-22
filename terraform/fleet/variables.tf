@@ -29,7 +29,6 @@ variable "fleet" {
     "db-dev-01"   = { env = "dev", role = "db", patch_group = "b", zone = "b" }
     "web-prod-01" = { env = "prod", role = "web", patch_group = "a", zone = "a" }
     "app-prod-01" = { env = "prod", role = "app", patch_group = "b", zone = "b" }
-    "app-dev-02"  = { env = "dev", role = "app", patch_group = "a", zone = "a" }
   }
 }
 
