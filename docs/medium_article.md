@@ -18,7 +18,7 @@ Building servers is the easy part. The hard part starts the next morning: patchi
 
 The result is a platform where Terraform provisions everything, GitHub Actions delivers it without a single stored key, and AWX (the open-source upstream of Ansible Tower) runs the operations: scheduled, approved, audited, tested, and in two cases, fully event-driven.
 
-## ❓ Why this project? The problem with daily operations
+## 📖 Introduction
 
 Most teams are good at building infrastructure. Infrastructure as code creates networks, clusters and VMs, and a pipeline applies it. Then the daily running of it begins, and the discipline quietly disappears:
 
@@ -29,6 +29,29 @@ Most teams are good at building infrastructure. Infrastructure as code creates n
 - **Slow incident response.** A stopped VM or a new VM nobody configured waits until somebody notices.
 
 I wanted to answer a simple question: what would the *operations plane* look like if it were built with the same care as the infrastructure itself? Everything created from code, nothing clicked into existence, every action approved or audited, and the routine incidents fixed by the platform before a human gets paged.
+
+So I built **Ansible Ops Platform on GCP**: a private GKE cluster running AWX, a Cloud SQL database on a private IP, a fleet of private VMs, a keyless GitHub Actions pipeline, and an event path that heals and onboards machines on its own. It ran end to end on a real project, `gcp-awx-ops`, and every claim in this article has a screenshot behind it.
+
+### 🧭 What you will learn
+
+- How to deploy **AWX on a private GKE cluster** with Terraform and the AWX Operator, backed by Cloud SQL on a private IP
+- How to give GitHub Actions access to GCP with **Workload Identity Federation**, and AWX access to the inventory with **Workload Identity**, so no key exists anywhere
+- How to keep the **whole AWX configuration in Git** and re-apply it on every merge
+- How to build **staged patching** with snapshots, a dev-first order and a human approval gate
+- How to **heal a stopped VM and onboard a new VM** from Cloud Audit Logs through Pub/Sub, with no inbound path into the cluster
+- How to **lint, test and harden** with ansible-lint, Molecule and a CIS-style role, and how to prove idempotence
+- How to send **useful chat alerts**, and why the AWX Test button misleads you
+- What broke along the way, and how I fixed it
+
+### 👥 Who this is for
+
+Platform, DevOps and SRE engineers who already run Terraform and want the operational side of the fleet to be as repeatable as the build side. A working knowledge of GCP, Kubernetes basics and Ansible will help, but each concept is explained before it is used.
+
+### 🎯 Goals and non-goals
+
+**Goals:** provision the whole platform as code with no console clicks; run all routine operations through one control plane with RBAC, audit and credential isolation; make operations self-service, scheduled or event-driven; use keyless authentication from CI to cloud; manage the automation platform itself as code; gate every change with automated quality checks.
+
+**Non-goals:** application CI/CD for business apps, multi-region high availability of AWX (single region and a single replica in the lab), and Windows fleet management.
 
 This article is that build, phase by phase, including what broke.
 
@@ -196,6 +219,18 @@ Note that there are two approvals: GitHub's `production` environment decides whe
 
 ![Self-healing sequence](https://raw.githubusercontent.com/bikram-singh/gcp-awx-ops-automation/main/docs/img/selfheal.png)
 
+Here is the event path in seven steps, so you can see where each safety check sits:
+
+1. Someone (or something) runs `compute.instances.stop` on a VM.
+2. Cloud Audit Logs records an **Admin Activity** entry. These are on by default and free.
+3. A **log sink** with a filter on `compute.instances.stop` and the fleet name regex routes the entry to a Pub/Sub topic. A second sink does the same for `compute.instances.insert`.
+4. The **bridge**, a small Python pod using only the standard library, **pulls** the message from a subscription. It authenticates to Pub/Sub with Workload Identity.
+5. The bridge reads the event type and the VM name, and checks the VM name against the fleet pattern.
+6. It calls the AWX REST API as a user that can run only two templates: `40 Heal` for a stop, `45 Onboard new VM` for an insert, with the limit set to that single host.
+7. Only after AWX accepts the launch does the bridge **acknowledge** the message. Server errors are retried and bad events are skipped.
+
+Pulling instead of pushing is the key design decision. A push-style webhook would need a public URL for AWX, a load balancer and a certificate. A pull bridge needs none of those, and it costs almost nothing.
+
 ![Stop web-dev-02; the bridge launches the heal job](https://raw.githubusercontent.com/bikram-singh/gcp-awx-ops-automation/main/docs/snapshots/05-self-healing-and-onboarding/03-self-heal-demo.png)
 
 The design keeps this safe. The event scope is Admin Activity `stop` events on VMs matching the fleet name regex, one fixed template, a `selfheal=off` label to opt out, and an idempotent heal playbook (a running VM is a no-op). The bridge's AWX user can run only two templates, so compromising the bridge cannot reach production patching.
@@ -261,6 +296,65 @@ I pointed `awx.gcpcloudhub.in` at the load balancer address in my DNS host, and 
 
 ![AWX dashboard at https://awx.gcpcloudhub.in](https://raw.githubusercontent.com/bikram-singh/gcp-awx-ops-automation/main/docs/snapshots/08-https-ingress/06-awx-dashboard-https.png)
 
+## 🔬 Under the hood: four details worth showing
+
+**1. A conditional IAM binding, so AWX can start only fleet VMs.** IAM conditions cannot use regex or `contains`, so the Terraform builds one `endsWith` clause per VM from the fleet map:
+
+```hcl
+locals {
+  fleet_name_checks = [
+    for name, vm in var.fleet :
+    "resource.name.endsWith('/zones/${local.region}-${vm.zone}/instances/${name}')"
+  ]
+  fleet_start_condition = format(
+    "resource.type == 'compute.googleapis.com/Instance' && (%s)",
+    join(" || ", local.fleet_name_checks)
+  )
+}
+
+resource "google_project_iam_member" "awx_vm_start" {
+  role   = "roles/compute.instanceAdmin.v1"
+  member = "serviceAccount:${google_service_account.awx_inventory.email}"
+  condition {
+    title      = "fleet-vms-only"
+    expression = local.fleet_start_condition
+  }
+}
+```
+
+Add a VM to the fleet map and the condition grows with it. The GKE nodes can never match.
+
+**2. The log sink filter.** The sink only forwards the events the bridge cares about:
+
+```
+protoPayload.serviceName="compute.googleapis.com"
+protoPayload.methodName:"compute.instances.stop"
+protoPayload.resourceName=~"/instances/<fleet-name-regex>$"
+```
+
+**3. Passing arguments to AWX safely.** My first `ops-trigger` passed `-e key=value`, which Ansible splits on spaces. The fix builds JSON with `jq`:
+
+```bash
+ARGS="$(jq -nc --arg t "$TEMPLATE" --arg l "$LIMIT" --arg e "$EXTRA_VARS" \
+  '{template: $t, limit: $l, launch_extra_vars: $e}')"
+ansible-playbook ansible/awx-config/launch.yml -e "$ARGS"
+```
+
+**4. A hardening file that cannot lock you out.** The `cis` role validates the SSH drop-in with `sshd -t` before Ansible installs it:
+
+```yaml
+- name: SSH daemon hardening drop-in (checked with sshd -t before it is installed)
+  ansible.builtin.copy:
+    dest: /etc/ssh/sshd_config.d/50-cis-hardening.conf
+    content: |
+      PermitRootLogin no
+      PasswordAuthentication no
+      MaxAuthTries {{ cis_ssh_max_auth_tries }}
+    validate: /usr/sbin/sshd -t -f %s
+```
+
+If the file is invalid, Ansible refuses to copy it. Add a dry-run template and a connectivity check after the real run, and hardening becomes a boring operation, which is exactly what you want.
+
 ## ✅ Proven on the running platform
 
 ![Proven on the running platform](https://raw.githubusercontent.com/bikram-singh/gcp-awx-ops-automation/main/docs/article/09-proven.png)
@@ -305,6 +399,14 @@ The optional HTTPS entry adds roughly $18 to $25 a month while it is on. The tea
 ## 📸 Snapshots
 
 All 90 screenshots from this build, sorted by phase, are in the repository under `docs/snapshots/`, with a caption for each in `docs/SNAPSHOTS.md`.
+
+## 🎬 The demo, minute by minute
+
+When I present this, the story is one sentence: *servers are easy to build and hard to operate, so I built the platform that runs the operations. Terraform builds it, GitHub Actions delivers it with no stored keys, and AWX runs patching, health checks, snapshots and self-healing with approvals and audit.* The run of show:
+
+![The demo, minute by minute](https://raw.githubusercontent.com/bikram-singh/gcp-awx-ops-automation/main/docs/article/10-demo.png)
+
+For a ten-minute slot I skip the live provisioning merge and the HTTPS page. The strongest moment is always the self-healing one: stop a VM on purpose, watch the AWX Jobs page, and see it running again in about a minute with nobody touching anything.
 
 ## 🎯 Wrapping up
 
