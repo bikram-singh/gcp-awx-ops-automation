@@ -36,6 +36,7 @@ awx_templates:
     description: Shows which execution environment runs the job, with its Ansible version, Google libraries and collections
     playbook: ansible/playbooks/ee_check.yml
     custom_ee: true
+    ask_limit: true
 
   - name: "00 Connectivity check"
     description: Proves AWX can log in to every managed VM
