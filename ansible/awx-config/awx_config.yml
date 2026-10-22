@@ -60,6 +60,12 @@ awx_templates:
     ask_limit: true
     ask_variables: true
 
+  - name: "40 Heal: start stopped VM"
+    description: Self-healing. Starts a managed VM that was stopped. Launched by the Pub/Sub bridge, or by hand with heal_instance and heal_zone
+    playbook: ansible/playbooks/heal_stopped_vm.yml
+    verbosity: 1
+    ask_variables: true
+
 # Workflows: chains of templates with success/approval gates. Each node has an id and lists the ids that run on success.
 # A node either runs a template or is an approval gate. Node limits override the template's prompt-on-launch limit.
 awx_workflows:
@@ -116,3 +122,11 @@ awx_schedules:
     template: "10 Health check"
     rrule: "DTSTART:20261022T020000Z RRULE:FREQ=DAILY;INTERVAL=1"
     enabled: true
+
+# The Pub/Sub bridge logs in as this AWX user. It may run the listed templates and nothing else.
+# Its password is created by the selfheal Terraform stack (Kubernetes secret selfheal-bridge);
+# the awx-config workflow reads it and applies it here.
+awx_selfheal:
+  username: selfheal
+  templates:
+    - "40 Heal: start stopped VM"

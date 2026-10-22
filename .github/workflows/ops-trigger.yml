@@ -16,6 +16,7 @@ on:
           - "10 Health check"
           - "21 Patch Linux DEV (dry run)"
           - "30 Snapshot disks (pre-patch)"
+          - "40 Heal: start stopped VM"
           - "20 Patch Linux (rolling)"
           - "50 Staged patching (dev, approve, prod)"
       limit:

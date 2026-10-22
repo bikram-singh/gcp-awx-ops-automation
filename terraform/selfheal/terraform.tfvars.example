@@ -1,0 +1,4 @@
+state_bucket = "your-terraform-state-bucket"
+
+# heal_template_name = "40 Heal: start stopped VM"
+# vm_name_regex      = "(web|app|db)-(dev|prod)-[0-9]+"

@@ -1,0 +1,114 @@
+---
+# Self-healing: starts a managed VM that was stopped.
+# Launched by the in-cluster bridge when the audit log shows an instances.stop event, or by hand from ops-trigger.
+# Talks to the Compute API with a Workload Identity token, so it needs no SSH and no stored key.
+# Extra vars:
+#   heal_instance  VM name                                    (required)
+#   heal_zone      zone of the VM, e.g. asia-south1-a         (required)
+#   gcp_project    project that owns the VM                   (default: gcp-awx-ops)
+# Opt out: label a VM selfheal=off and this job leaves it stopped. Only VMs labelled ansible_managed=true are touched.
+- name: Start a stopped managed VM
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    gcp_project: gcp-awx-ops
+    heal_instance: ""
+    heal_zone: ""
+    heal_wait_retries: 30
+    compute_api: https://compute.googleapis.com/compute/v1
+    metadata_token_url: http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token
+    instance_url: "{{ compute_api }}/projects/{{ gcp_project }}/zones/{{ heal_zone }}/instances/{{ heal_instance }}"
+  tasks:
+    - name: Check the inputs (they end up in an API URL, so keep them strict)
+      ansible.builtin.assert:
+        that:
+          - heal_instance is match('^[a-z]([-a-z0-9]*[a-z0-9])?$')
+          - heal_zone is match('^[a-z]+-[a-z]+[0-9]+-[a-z]$')
+          - gcp_project is match('^[a-z][-a-z0-9]{4,28}[a-z0-9]$')
+        fail_msg: Pass heal_instance and heal_zone, for example heal_instance=web-dev-02 heal_zone=asia-south1-a
+        quiet: true
+
+    - name: Get an access token from the metadata server (Workload Identity)
+      ansible.builtin.uri:
+        url: "{{ metadata_token_url }}"
+        headers:
+          Metadata-Flavor: Google
+        return_content: true
+      register: token
+      no_log: true
+
+    - name: Read the instance
+      ansible.builtin.uri:
+        url: "{{ instance_url }}"
+        headers:
+          Authorization: "Bearer {{ token.json.access_token }}"
+        status_code: [200, 404]
+        return_content: true
+      register: inst
+
+    - name: Wait while the VM is still stopping
+      ansible.builtin.uri:
+        url: "{{ instance_url }}"
+        headers:
+          Authorization: "Bearer {{ token.json.access_token }}"
+        return_content: true
+      register: inst_wait
+      until: inst_wait.json.status != 'STOPPING'
+      retries: 24
+      delay: 5
+      when: inst.status == 200 and inst.json.status == 'STOPPING'
+
+    # A skipped task still overwrites its registered variable, so pick the newest read explicitly.
+    - name: Use the latest reading of the instance
+      ansible.builtin.set_fact:
+        current: "{{ inst if inst_wait is skipped else inst_wait }}"
+
+    - name: Decide what to do
+      ansible.builtin.set_fact:
+        heal_action: >-
+          {{
+            'missing' if current.status == 404 else
+            'optout' if (current.json.labels | default({})).get('selfheal', 'on') == 'off' else
+            'unmanaged' if (current.json.labels | default({})).get('ansible_managed', 'false') != 'true' else
+            'already_running' if current.json.status == 'RUNNING' else
+            'start' if current.json.status == 'TERMINATED' else
+            'other_state'
+          }}
+        heal_previous_status: "{{ current.json.status | default('NOT_FOUND') }}"
+
+    - name: Start the VM
+      ansible.builtin.uri:
+        url: "{{ instance_url }}/start"
+        method: POST
+        headers:
+          Authorization: "Bearer {{ token.json.access_token }}"
+        status_code: 200
+      when: heal_action == 'start'
+
+    - name: Wait until the VM is running
+      ansible.builtin.uri:
+        url: "{{ instance_url }}"
+        headers:
+          Authorization: "Bearer {{ token.json.access_token }}"
+        return_content: true
+      register: after
+      until: after.json.status == 'RUNNING'
+      retries: "{{ heal_wait_retries }}"
+      delay: 5
+      when: heal_action == 'start'
+
+    - name: Report
+      ansible.builtin.debug:
+        msg: >-
+          {{ heal_instance }} ({{ heal_zone }}): was {{ heal_previous_status }}, action {{ heal_action }},
+          now {{ after.json.status if heal_action == 'start' else heal_previous_status }}
+
+    - name: Publish the outcome as job artifacts
+      ansible.builtin.set_stats:
+        data:
+          heal_report:
+            instance: "{{ heal_instance }}"
+            zone: "{{ heal_zone }}"
+            previous_status: "{{ heal_previous_status }}"
+            action: "{{ heal_action }}"

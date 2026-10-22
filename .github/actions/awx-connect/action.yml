@@ -49,6 +49,12 @@ runs:
         [ "${ready:-0}" = 1 ] || { echo "AWX did not answer"; cat /tmp/port-forward.log; exit 1; }
         PASSWORD="$(kubectl -n awx get secret awx-admin-password -o jsonpath='{.data.password}' | base64 -d)"
         echo "::add-mask::${PASSWORD}"
+        # The selfheal stack creates this secret. It is absent until that stack is applied, which is fine.
+        BRIDGE_PASSWORD="$(kubectl -n awx get secret selfheal-bridge -o jsonpath='{.data.password}' 2>/dev/null | base64 -d || true)"
+        if [ -n "${BRIDGE_PASSWORD}" ]; then
+          echo "::add-mask::${BRIDGE_PASSWORD}"
+          echo "SELFHEAL_PASSWORD=${BRIDGE_PASSWORD}" >> "$GITHUB_ENV"
+        fi
         {
           echo "CONTROLLER_HOST=http://localhost:8080"
           echo "CONTROLLER_USERNAME=admin"

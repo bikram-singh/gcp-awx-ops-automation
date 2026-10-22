@@ -45,7 +45,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        stack: [platform, awx, fleet]
+        stack: [platform, awx, fleet, selfheal]
     defaults:
       run:
         working-directory: terraform/${{ matrix.stack }}
@@ -73,7 +73,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        stack: [platform, awx, fleet]
+        stack: [platform, awx, fleet, selfheal]
     # The awx stack reads platform outputs from remote state, so on the very first
     # PR (before platform is applied) its plan cannot succeed. Do not block on it.
     continue-on-error: ${{ matrix.stack != 'platform' }}
@@ -116,7 +116,7 @@ jobs:
       fail-fast: true
       max-parallel: 1 # platform first, then awx
       matrix:
-        stack: [platform, awx, fleet]
+        stack: [platform, awx, fleet, selfheal]
     defaults:
       run:
         working-directory: terraform/${{ matrix.stack }}

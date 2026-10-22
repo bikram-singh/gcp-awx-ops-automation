@@ -59,6 +59,20 @@ resource "google_project_iam_member" "awx_snapshot" {
   member  = "serviceAccount:${google_service_account.awx_inventory.email}"
 }
 
+# Lets AWX start a stopped fleet VM (Phase 6 self-healing). The binding is conditional, so it only works on
+# VMs named like the fleet (web|app|db-<env>-NN) and never on the GKE nodes or anything else in the project.
+resource "google_project_iam_member" "awx_vm_start" {
+  project = local.project_id
+  role    = "roles/compute.instanceAdmin.v1"
+  member  = "serviceAccount:${google_service_account.awx_inventory.email}"
+
+  condition {
+    title       = "fleet-vms-only"
+    description = "Only the managed fleet VMs, not the GKE nodes"
+    expression  = "resource.type == 'compute.googleapis.com/Instance' && resource.name.matches('^projects/[^/]+/zones/[^/]+/instances/(web|app|db)-(dev|prod)-[0-9]+$')"
+  }
+}
+
 # Workload Identity: AWX job pods (Kubernetes service accounts in the awx namespace) act as
 # the inventory service account without any key. The org policy blocks key creation anyway.
 resource "google_service_account_iam_member" "awx_inventory_workload_identity" {
