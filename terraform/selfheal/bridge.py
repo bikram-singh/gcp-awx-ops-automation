@@ -1,7 +1,8 @@
 """Bridge between Pub/Sub and a private AWX.
 
 Runs inside the cluster. It PULLS events from a Pub/Sub subscription (so AWX needs no public address),
-and for each "VM stopped" audit-log event launches an AWX job template through the AWX REST API.
+and launches an AWX job template through the AWX REST API: the heal template for a "VM stopped" audit-log
+event, the onboarding template for a "VM created" event.
 Standard library only: the Pub/Sub REST API and the GKE metadata server (Workload Identity) are called directly.
 """
 import base64
@@ -20,6 +21,7 @@ AWX_URL = os.environ["AWX_URL"].rstrip("/")
 AWX_USER = os.environ["AWX_USER"]
 AWX_PASSWORD = os.environ["AWX_PASSWORD"]
 TEMPLATE = os.environ["AWX_TEMPLATE"]
+ONBOARD_TEMPLATE = os.environ.get("AWX_ONBOARD_TEMPLATE", "")
 PUBSUB = os.environ.get("PUBSUB_ENDPOINT", "https://pubsub.googleapis.com").rstrip("/")
 TOKEN_URL = os.environ.get(
     "METADATA_TOKEN_URL",
@@ -67,17 +69,24 @@ def awx(method, path, payload=None):
         return json.load(resp)
 
 
-def launch_heal(project, zone, instance):
-    found = awx("GET", "/api/v2/job_templates/?name=" + urllib.parse.quote(TEMPLATE))
+def launch(template, body):
+    found = awx("GET", "/api/v2/job_templates/?name=" + urllib.parse.quote(template))
     if found.get("count") != 1:
-        raise LookupError("expected one job template named %r, found %s" % (TEMPLATE, found.get("count")))
+        raise LookupError("expected one job template named %r, found %s" % (template, found.get("count")))
     template_id = found["results"][0]["id"]
-    job = awx(
-        "POST",
-        "/api/v2/job_templates/%d/launch/" % template_id,
-        {"extra_vars": {"heal_instance": instance, "heal_zone": zone, "gcp_project": project}},
+    return awx("POST", "/api/v2/job_templates/%d/launch/" % template_id, body)["id"]
+
+
+def launch_heal(project, zone, instance):
+    return launch(TEMPLATE, {"extra_vars": {"heal_instance": instance, "heal_zone": zone, "gcp_project": project}})
+
+
+def launch_onboard(instance):
+    # The template prompts for a limit, so the job touches only the new VM.
+    return launch(
+        ONBOARD_TEMPLATE,
+        {"limit": instance, "extra_vars": {"onboard_host": instance, "target_hosts": instance}},
     )
-    return job["id"]
 
 
 def handle(message):
@@ -94,8 +103,19 @@ def handle(message):
         return True
     project, zone, instance = match.groups()
     actor = payload.get("authenticationInfo", {}).get("principalEmail", "unknown")
+    method = payload.get("methodName", "")
+    if ".instances.insert" in method:
+        action = "onboard"
+    elif ".instances.stop" in method:
+        action = "heal"
+    else:
+        log(event="skipped", reason="unhandled method", method=method, instance=instance)
+        return True
+    if action == "onboard" and not ONBOARD_TEMPLATE:
+        log(event="skipped", reason="onboarding not configured", instance=instance)
+        return True
     try:
-        job_id = launch_heal(project, zone, instance)
+        job_id = launch_onboard(instance) if action == "onboard" else launch_heal(project, zone, instance)
     except urllib.error.HTTPError as err:
         retry = err.code >= 500 or err.code in (408, 429)
         log(event="awx_http_error", code=err.code, instance=instance, retry=retry)
@@ -106,12 +126,12 @@ def handle(message):
     except (urllib.error.URLError, TimeoutError, OSError) as err:
         log(event="awx_unreachable", error=str(err), instance=instance, retry=True)
         return False
-    log(event="launched", job=job_id, instance=instance, zone=zone, stopped_by=actor)
+    log(event="launched", action=action, job=job_id, instance=instance, zone=zone, actor=actor)
     return True
 
 
 def main():
-    log(event="started", subscription=SUBSCRIPTION, template=TEMPLATE)
+    log(event="started", subscription=SUBSCRIPTION, template=TEMPLATE, onboard_template=ONBOARD_TEMPLATE)
     while True:
         try:
             received = pubsub("pull", {"maxMessages": 5}).get("receivedMessages", [])

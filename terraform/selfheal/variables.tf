@@ -15,6 +15,12 @@ variable "heal_template_name" {
   default     = "40 Heal: start stopped VM"
 }
 
+variable "onboard_template_name" {
+  description = "AWX job template the bridge launches when a managed VM is created. Must match awx_config.yml. Empty disables onboarding."
+  type        = string
+  default     = "45 Onboard new VM"
+}
+
 variable "vm_name_regex" {
   description = "Regex (RE2) for the names of VMs that trigger self-healing. Keeps GKE nodes and other VMs out."
   type        = string

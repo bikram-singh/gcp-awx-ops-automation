@@ -1,0 +1,73 @@
+---
+# Provisioning callback: a new managed VM configures itself.
+# Launched by the in-cluster bridge when the audit log shows a completed instances.insert on a fleet VM,
+# or by hand from ops-trigger. AWX refreshes the inventory (update_on_launch) before this job starts.
+# Extra vars (the bridge sets all three; the AWX limit is set to the same VM):
+#   onboard_host   name of the new VM                      (required)
+#   target_hosts   same name, read by the health check
+# The VM must carry the label ansible_managed=true, otherwise the dynamic inventory never lists it.
+
+- name: Check the new VM is in the inventory
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    onboard_host: ""
+  tasks:
+    - name: Fail early, with a clear message, when the VM is unknown to AWX
+      ansible.builtin.assert:
+        that:
+          - onboard_host is match('^[a-z]([-a-z0-9]*[a-z0-9])?$')
+          - onboard_host in groups['all']
+        fail_msg: >-
+          {{ onboard_host | default('(none)') }} is not in the inventory. Check that the VM is RUNNING
+          and labelled ansible_managed=true, then launch this template again.
+        quiet: true
+
+- name: Wait until the new VM accepts SSH (the startup script creates the ansible user)
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Wait for connection
+      ansible.builtin.wait_for_connection:
+        delay: 5
+        sleep: 10
+        timeout: 300
+
+- name: Baseline configuration
+  hosts: all
+  gather_facts: true
+  become: true
+  tasks:
+    - name: Time sync package present
+      ansible.builtin.apt:
+        name: chrony
+        state: present
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Time sync running and enabled
+      ansible.builtin.service:
+        name: chrony
+        state: started
+        enabled: true
+
+    - name: Mark the VM as managed
+      ansible.builtin.copy:
+        dest: /etc/motd
+        content: |
+          Managed by AWX (Ansible). Do not change configuration by hand.
+        mode: "0644"
+
+    - name: Record when it was onboarded
+      ansible.builtin.copy:
+        dest: /etc/awx-onboarded
+        content: "{{ ansible_facts['date_time']['iso8601'] }}\n"
+        mode: "0644"
+        force: false
+
+- name: Prove it is healthy
+  ansible.builtin.import_playbook: connectivity_check.yml
+
+- name: Health baseline
+  ansible.builtin.import_playbook: health_check.yml

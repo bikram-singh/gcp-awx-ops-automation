@@ -66,6 +66,12 @@ awx_templates:
     verbosity: 1
     ask_variables: true
 
+  - name: "45 Onboard new VM"
+    description: Provisioning callback. Waits for SSH, applies a baseline, checks health on one new VM. Launched by the bridge when a fleet VM is created
+    playbook: ansible/playbooks/onboard_vm.yml
+    ask_limit: true
+    ask_variables: true
+
 # Workflows: chains of templates with success/approval gates. Each node has an id and lists the ids that run on success.
 # A node either runs a template or is an approval gate. Node limits override the template's prompt-on-launch limit.
 awx_workflows:
@@ -130,6 +136,32 @@ awx_selfheal:
   username: selfheal
   templates:
     - "40 Heal: start stopped VM"
+    - "45 Onboard new VM"
+
+# Notifications. A webhook that Slack, Mattermost, Teams (workflow webhook) and similar tools accept.
+# Created only when the repository secret NOTIFY_WEBHOOK_URL is set (see docs/PHASE8.md).
+# Attached to every template and workflow: on failure, and on "approval needed" for workflows.
+# !unsafe keeps the {{ }} for AWX to fill in, instead of Ansible.
+awx_notifications:
+  name: Ops alerts (webhook)
+  description: Failures and approval requests, sent to a chat webhook
+  messages:
+    error:
+      message: !unsafe "FAILED: {{ job_friendly_name }} #{{ job.id }} {{ job.name }}"
+      body: !unsafe '{"text": ":x: AWX {{ job_friendly_name }} #{{ job.id }} \"{{ job.name }}\" failed: {{ url }}"}'
+    workflow_approval:
+      running:
+        message: !unsafe "Approval needed"
+        body: !unsafe '{"text": ":hourglass: AWX approval needed: \"{{ approval_node_name }}\" in {{ workflow_url }}"}'
+      approved:
+        message: !unsafe "Approved"
+        body: !unsafe '{"text": ":white_check_mark: AWX approved: \"{{ approval_node_name }}\" {{ workflow_url }}"}'
+      denied:
+        message: !unsafe "Denied"
+        body: !unsafe '{"text": ":no_entry: AWX denied: \"{{ approval_node_name }}\" {{ workflow_url }}"}'
+      timed_out:
+        message: !unsafe "Approval timed out"
+        body: !unsafe '{"text": ":alarm_clock: AWX approval timed out: \"{{ approval_node_name }}\" {{ workflow_url }}"}'
 
 # Access control. Three teams with separate duties: look, operate, approve prod.
 # Nobody needs the admin account for daily work. The people in the teams below are demo users that are

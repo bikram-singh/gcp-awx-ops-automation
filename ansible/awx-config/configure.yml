@@ -70,6 +70,30 @@
         update_on_launch: true
         state: present
 
+    - name: Notification channel (only when the webhook URL is supplied)
+      awx.awx.notification_template:
+        name: "{{ awx_notifications.name }}"
+        description: "{{ awx_notifications.description }}"
+        organization: "{{ awx_organization }}"
+        notification_type: webhook
+        notification_configuration:
+          url: "{{ lookup('ansible.builtin.env', 'NOTIFY_WEBHOOK_URL') }}"
+          http_method: POST
+          headers:
+            Content-Type: application/json
+          disable_ssl_verification: false
+        messages: "{{ awx_notifications.messages }}"
+        state: present
+      when:
+        - awx_notifications is defined
+        - lookup('ansible.builtin.env', 'NOTIFY_WEBHOOK_URL') | length > 0
+      no_log: true
+
+    - name: Remember whether notifications are on
+      ansible.builtin.set_fact:
+        notifications_on: >-
+          {{ awx_notifications is defined and (lookup('ansible.builtin.env', 'NOTIFY_WEBHOOK_URL') | length > 0) }}
+
     - name: Job templates
       awx.awx.job_template:
         name: "{{ item.name }}"
@@ -87,6 +111,7 @@
         ask_limit_on_launch: "{{ item.ask_limit | default(false) }}"
         ask_variables_on_launch: "{{ item.ask_variables | default(false) }}"
         ask_inventory_on_launch: false
+        notification_templates_error: "{{ [awx_notifications.name] if notifications_on | bool else omit }}"
         state: present
       loop: "{{ awx_templates }}"
       loop_control:
@@ -109,6 +134,8 @@
         description: "{{ item.description | default('') }}"
         organization: "{{ awx_organization }}"
         allow_simultaneous: false
+        notification_templates_error: "{{ [awx_notifications.name] if notifications_on | bool else omit }}"
+        notification_templates_approvals: "{{ [awx_notifications.name] if notifications_on | bool else omit }}"
         state: present
       loop: "{{ awx_workflows | default([]) }}"
       loop_control:

@@ -20,6 +20,7 @@
 | 3-5 | Actions > ops-trigger > Run workflow, template `10 Health check` | Self-service from Git. Show the job in AWX, per-host output. Mention JSON args after the key=value bug. |
 | 5-7 | AWX workflow `50 Staged patching` | Pre-check, snapshot dev, patch dev, verify, **approval gate**, snapshot prod, patch prod, verify. Open a finished run (workflow 48). Show snapshots in the GCP console. |
 | 7-9 | Self-healing: `gcloud compute instances stop web-dev-02`, then watch AWX Jobs | Audit log, sink, Pub/Sub, bridge, AWX job `40 Heal`. VM is RUNNING again in about a minute (job 138). Show `docs/img/selfheal.png`. |
+| 9-10 | Optional: merge a new VM line in `terraform/fleet`, watch job 45 onboard it | Provisioning callback: the same audit-log path that heals also configures new VMs. No load balancer. |
 | 9-10 | AWX Teams / RBAC, `daily-report` run | Viewers look, operators run, approvers approve prod. The report is a table in the run summary. |
 
 ## Talking points (likely interview questions)

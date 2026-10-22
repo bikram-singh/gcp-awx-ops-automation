@@ -50,11 +50,33 @@ resource "google_logging_project_sink" "vm_stop" {
   EOT
 }
 
+# Completed "create VM" calls on the managed fleet: the provisioning callback. Same topic and bridge.
+resource "google_logging_project_sink" "vm_insert" {
+  project                = local.project_id
+  name                   = "awx-onboard-vm-insert"
+  destination            = "pubsub.googleapis.com/${google_pubsub_topic.events.id}"
+  unique_writer_identity = true
+
+  filter = <<-EOT
+    protoPayload.serviceName="compute.googleapis.com"
+    protoPayload.methodName:"compute.instances.insert"
+    operation.last=true
+    protoPayload.resourceName=~"/instances/${var.vm_name_regex}$"
+  EOT
+}
+
 resource "google_pubsub_topic_iam_member" "sink_publisher" {
   project = local.project_id
   topic   = google_pubsub_topic.events.name
   role    = "roles/pubsub.publisher"
   member  = google_logging_project_sink.vm_stop.writer_identity
+}
+
+resource "google_pubsub_topic_iam_member" "insert_sink_publisher" {
+  project = local.project_id
+  topic   = google_pubsub_topic.events.name
+  role    = "roles/pubsub.publisher"
+  member  = google_logging_project_sink.vm_insert.writer_identity
 }
 
 # Identity of the bridge pod (Workload Identity, no key): may pull from this one subscription and nothing else.
@@ -170,6 +192,10 @@ resource "kubernetes_deployment" "bridge" {
           env {
             name  = "AWX_TEMPLATE"
             value = var.heal_template_name
+          }
+          env {
+            name  = "AWX_ONBOARD_TEMPLATE"
+            value = var.onboard_template_name
           }
           env {
             name = "AWX_USER"
