@@ -36,7 +36,7 @@ flowchart TB
     bridge -- "heal or onboard" --> awx
   end
 
-  awx -. "failure and approval alerts" .-> chat["Chat webhook"]
+  awx -. "failure, success and approval alerts" .-> chat["Chat webhook"]
 ```
 
 ## 2. From a commit to a running system

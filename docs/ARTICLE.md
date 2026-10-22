@@ -62,7 +62,16 @@ I also built a custom execution environment, the image every AWX job runs in: th
 
 ## Alerts when something fails
 
-AWX notification templates send job failures and "approval needed" requests to a chat webhook. They are only created when a secret is set, so the repository works without them.
+AWX notification templates send job failures, "approval needed" requests and, for chosen templates, successes to a chat webhook. They are only created when a secret is set, so the repository works without them.
+
+I tested it with a free Discord server, using its Slack-compatible webhook (add `/slack` to the URL). Two things surprised me:
+
+- **The Test button lies.** AWX's test button sends a generic payload with no `text` field, so Discord rejects it and the badge says Failed. The real alerts carry `text` and work. The only honest test is a real job.
+- **Forcing a failure takes care.** I launched the onboarding template for a VM that does not exist, and it still succeeded, twice. The check lives in a play on `localhost`, and my limit excluded it. A limit of `localhost:web-dev-01` made it fail properly.
+
+After that, a red alert for the failed job and a green one for a connectivity check landed in the channel. The links said `towerhost` until I set AWX's URL base from the same domain variable the HTTPS entry uses. I deleted the webhook afterwards, because the URL had been in screenshots.
+
+[SCREENSHOT: Discord channel with a failed and a succeeded alert]
 
 ## An optional front door
 

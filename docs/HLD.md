@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Author | Bikram |
-| Status | v1.0, all phases implemented and run end to end (the optional HTTPS entry and chat notifications are off until configured) |
+| Status | v1.0, all phases implemented and run end to end (the optional HTTPS entry and chat notifications are off until configured; both were proven on this build) |
 | Scope | Platform to provision, deliver and operate infrastructure using Terraform, GitHub Actions and AWX |
 
 Diagrams: [ARCHITECTURE.md](ARCHITECTURE.md). Per-phase detail: PHASE2 to PHASE8, INGRESS. Demo: [DEMO.md](DEMO.md). Teardown: [TEARDOWN.md](TEARDOWN.md).
@@ -96,7 +96,7 @@ See the platform diagram in [ARCHITECTURE.md](ARCHITECTURE.md) (`img/platform.pn
 | Daily health and capacity report | Done (scheduled job and `daily-report` workflow) |
 | Self-healing of stopped VMs | Done |
 | Provisioning callback for new VMs | Done |
-| Failure and approval alerts to a chat webhook | Done, enabled by a secret |
+| Failure, success and approval alerts to a chat webhook | Done, enabled by a secret; proven with Discord |
 | Role-based access (look, operate, approve) | Done |
 | Scheduled stop/start of dev VMs, certificate expiry checks, application deployment | Not built |
 

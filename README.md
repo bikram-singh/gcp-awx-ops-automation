@@ -102,7 +102,7 @@ Prerequisites: a GCP project with billing, `gcloud`, `terraform >= 1.6`, a GitHu
 - [x] Phase 6a: Self-healing, a stopped VM is started again by AWX (see [docs/PHASE6.md](docs/PHASE6.md))
 - [x] Phase 6b: Provisioning callback, new VMs configure themselves (see [docs/PHASE8.md](docs/PHASE8.md))
 - [x] Phase 7a: RBAC with separate look, operate and approve duties, plus a daily health report (see [docs/PHASE7.md](docs/PHASE7.md))
-- [x] Phase 7b: AWX notifications to a chat webhook (see [docs/PHASE8.md](docs/PHASE8.md))
+- [x] Phase 7b: AWX notifications (failure, success, approvals) to a chat webhook, proven with Discord (see [docs/PHASE8.md](docs/PHASE8.md))
 - [x] Phase 7c: diagrams, demo script, teardown guide, Medium article draft (see Documents)
 - [x] Phase 9 (optional): HTTPS entry to AWX with a Google-managed certificate and a Cloud Armor allowlist (see [docs/INGRESS.md](docs/INGRESS.md))
 

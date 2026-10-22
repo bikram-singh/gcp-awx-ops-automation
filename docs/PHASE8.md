@@ -39,6 +39,7 @@ Merge. `infra` creates the VM; within a minute AWX shows job **45 Onboard new VM
 AWX notification template **Ops alerts (webhook)**, attached to every job template and workflow:
 - job or workflow **failed**
 - workflow **approval needed**, approved, denied, timed out
+- job **succeeded**, only for templates marked `notify_success: true` (today `00 Connectivity check`, as a demo; the nightly health check is left quiet on purpose)
 
 It is a plain JSON webhook with a `{"text": "..."}` body, which Slack, Mattermost and Teams workflow webhooks accept. It is **only created when the secret exists**. Without it nothing changes.
 
@@ -62,8 +63,24 @@ A free personal Microsoft account (an `@outlook.com` address on personal Teams) 
 Then, for any channel:
 1. GitHub repo, Settings, Secrets and variables, Actions, new repository **secret** `NOTIFY_WEBHOOK_URL`. For Teams also add the **variable** `NOTIFY_FORMAT` = `teams`.
 2. Run **awx-config** (Run workflow).
-3. In AWX, Administration, Notifications, open "Ops alerts (webhook)" and press the test (bell) button. A message should arrive.
-4. Real test: in AWX launch `45 Onboard new VM` with limit `web-dev-01` and extra variables `onboard_host: missing-vm`. It fails at the first check and the alert arrives.
+3. Do the real test below. Do **not** rely on the test (bell) button, see the note.
+4. Failure test: in AWX launch `45 Onboard new VM` with **Limit** `localhost:web-dev-01` and **Variables** `onboard_host: missing-vm`. It fails at the first check and a red alert arrives.
+5. Success test: launch `00 Connectivity check`. A green alert arrives when it finishes.
+
+**Why the test button shows Failed on Discord.** AWX's test button sends a generic payload with no `text` field, and Discord's Slack-compatible endpoint rejects a message without `text`. Our real alert bodies do have `text`, so they work. After a real failed job the badge on the notification flips to **Successful**.
+
+**Why the limit has `localhost:`.** The first play of `onboard_vm.yml` runs on `localhost` and holds the "is this VM in the inventory" check. A limit of only `web-dev-01` skips that play, so the job would succeed. The bridge always passes a real VM name, so normal onboarding is not affected.
+
+**Links in alerts.** AWX builds them from the setting `TOWER_URL_BASE`. When the repository variable `AWX_DOMAIN` is set, `awx-config` sets it to `https://<AWX_DOMAIN>` so links open the real AWX. Without it AWX writes the placeholder `towerhost`.
+
+### Proven on this build
+
+| Check | Result |
+|---|---|
+| Failed job (45, unknown VM) | Red alert in Discord, link to the job |
+| Succeeded job (00) | Green alert in Discord, link to the job |
+| Alert link | `https://awx.gcpcloudhub.in/#/jobs/playbook/<id>` |
+| Webhook (test) | Discord, via the `/slack` URL; the webhook and secret were deleted after the test |
 
 The webhook URL is stored as an AWX secret and is never printed in logs (`no_log`). If a message does not look right in your tool, change the `body` strings under `awx_notifications` in `awx_config.yml` (`messages` for Slack-style, `messages_teams` for Adaptive Cards); no other file is involved.
 
@@ -76,4 +93,5 @@ For email, change `notification_type` to `email` in `configure.yml` and add SMTP
 - `ansible/playbooks/onboard_vm.yml` (new)
 - `ansible/awx-config/awx_config.yml`, `configure.yml`: template 45, bridge permissions, notification template and attachments
 - `terraform/selfheal/bridge.py`, `main.tf`, `variables.tf`: second sink and dispatch
-- `.github/workflows/awx-config.yml`, `ops-trigger.yml`: `NOTIFY_WEBHOOK_URL` secret, `NOTIFY_FORMAT` variable, template 45 in the picker
+- `.github/workflows/awx-config.yml`, `ops-trigger.yml`: `NOTIFY_WEBHOOK_URL` secret, `NOTIFY_FORMAT` and `AWX_DOMAIN` variables, template 45 in the picker
+- `awx_config.yml`, `configure.yml`: success message, `notify_success` flag, `TOWER_URL_BASE` setting

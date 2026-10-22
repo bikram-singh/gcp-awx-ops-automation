@@ -40,6 +40,7 @@ No long-lived keys: Workload Identity Federation for CI, Workload Identity for p
 **What went wrong and how did you fix it?** (have two ready)
 1. ops-trigger launched the wrong template: `-e key=value` splits on spaces and a numeric name resolves as an AWX ID. Fixed with JSON args and an assertion.
 2. IAM condition rejected `matches` and `contains`. Only `==`, `startsWith`, `endsWith`, `extract` are supported; generated `endsWith` clauses from the fleet variable.
+3. Alerts: the AWX Test button always failed against Discord (no `text` field), and my first "failing" job succeeded because the limit skipped the localhost check. Tested with real jobs instead, and fixed the limit with `localhost:vm`.
 
 **How does self-healing avoid loops?**
 Scoped to Admin Activity `stop` events on VMs matching the fleet name regex, one fixed template, an operator label to opt out, and the heal playbook is idempotent (running VM is a no-op).
