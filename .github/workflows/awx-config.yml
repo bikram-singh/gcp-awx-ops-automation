@@ -7,6 +7,7 @@ name: awx-config
 # Optional VARIABLES: GKE_CLUSTER (default awxplat-gke), GCP_REGION (default asia-south1)
 # Optional SECRETS:   FLEET_SSH_PRIVATE_KEY (creates or keeps the fleet-ssh credential in step with Git)
 #                     NOTIFY_WEBHOOK_URL (chat webhook for failure and approval alerts)
+# Optional VARIABLE:  NOTIFY_FORMAT = teams for a Microsoft Teams Workflows webhook (default: Slack-style body)
 #                     DEMO_USER_PASSWORD (creates the demo users viewer, operator and approver)
 
 on:
@@ -45,6 +46,7 @@ jobs:
           FLEET_SSH_PRIVATE_KEY: ${{ secrets.FLEET_SSH_PRIVATE_KEY }}
           DEMO_USER_PASSWORD: ${{ secrets.DEMO_USER_PASSWORD }}
           NOTIFY_WEBHOOK_URL: ${{ secrets.NOTIFY_WEBHOOK_URL }}
+          NOTIFY_FORMAT: ${{ vars.NOTIFY_FORMAT }}
         run: ansible-playbook ansible/awx-config/configure.yml
 
       - name: Summary

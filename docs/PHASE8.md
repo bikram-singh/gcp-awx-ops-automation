@@ -44,21 +44,36 @@ It is a plain JSON webhook with a `{"text": "..."}` body, which Slack, Mattermos
 
 ### Turn it on
 
-1. Create an incoming webhook in your chat tool and copy the URL.
-2. GitHub repo, Settings, Secrets and variables, Actions, new repository secret `NOTIFY_WEBHOOK_URL`.
-3. Run **awx-config** (Run workflow).
-4. In AWX, Administration, Notifications, open "Ops alerts (webhook)" and press the bell/test button. A message should arrive.
-5. Real test: in AWX launch `45 Onboard new VM` with limit `web-dev-01` and extra variables `onboard_host: missing-vm`. It fails at the first check and the alert arrives.
+Pick one channel. All three use the same two settings: the secret `NOTIFY_WEBHOOK_URL` and, for Teams only, the variable `NOTIFY_FORMAT`.
 
-The webhook URL is stored as an AWX secret and is never printed in logs (`no_log`). If the message body does not look right in your tool, change the `body` strings under `awx_notifications` in `awx_config.yml`; no other file is involved.
+| Channel | Webhook URL | `NOTIFY_FORMAT` |
+|---|---|---|
+| Slack | Incoming webhook URL from a Slack app | leave empty |
+| Discord (quickest, free) | Server settings, Integrations, Webhooks, copy the URL and **add `/slack` at the end** | leave empty |
+| Microsoft Teams | Teams Workflows webhook URL (below) | `teams` |
 
-### Email or Teams instead
+**Teams.** The old "Incoming Webhook" connector is being retired; the supported route is a Workflow:
+1. In Teams open a **channel** (a team with a channel, not a one-to-one chat), open `...` next to it, choose **Workflows**.
+2. Pick the template **Post to a channel when a webhook request is received**, sign in, pick the team and channel, finish.
+3. Copy the generated URL. It contains a secret key, so treat it like a password.
 
-For email, change `notification_type` to `email` in `configure.yml` and add SMTP settings; for classic Teams connectors use `notification_type: webhook` with the connector's own JSON shape.
+A free personal Microsoft account (an `@outlook.com` address on personal Teams) normally has no teams or channels and no Workflows, so this route usually needs a work or school Teams. If the Workflows option does not appear, use Discord or Slack instead.
+
+Then, for any channel:
+1. GitHub repo, Settings, Secrets and variables, Actions, new repository **secret** `NOTIFY_WEBHOOK_URL`. For Teams also add the **variable** `NOTIFY_FORMAT` = `teams`.
+2. Run **awx-config** (Run workflow).
+3. In AWX, Administration, Notifications, open "Ops alerts (webhook)" and press the test (bell) button. A message should arrive.
+4. Real test: in AWX launch `45 Onboard new VM` with limit `web-dev-01` and extra variables `onboard_host: missing-vm`. It fails at the first check and the alert arrives.
+
+The webhook URL is stored as an AWX secret and is never printed in logs (`no_log`). If a message does not look right in your tool, change the `body` strings under `awx_notifications` in `awx_config.yml` (`messages` for Slack-style, `messages_teams` for Adaptive Cards); no other file is involved.
+
+### Email instead
+
+For email, change `notification_type` to `email` in `configure.yml` and add SMTP settings (host, port, user, app password, sender, recipients).
 
 ## Files changed
 
 - `ansible/playbooks/onboard_vm.yml` (new)
 - `ansible/awx-config/awx_config.yml`, `configure.yml`: template 45, bridge permissions, notification template and attachments
 - `terraform/selfheal/bridge.py`, `main.tf`, `variables.tf`: second sink and dispatch
-- `.github/workflows/awx-config.yml`, `ops-trigger.yml`: `NOTIFY_WEBHOOK_URL` secret, template 45 in the picker
+- `.github/workflows/awx-config.yml`, `ops-trigger.yml`: `NOTIFY_WEBHOOK_URL` secret, `NOTIFY_FORMAT` variable, template 45 in the picker

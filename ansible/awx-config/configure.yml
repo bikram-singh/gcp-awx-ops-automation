@@ -70,7 +70,7 @@
         update_on_launch: true
         state: present
 
-    - name: Notification channel (only when the webhook URL is supplied)
+    - name: Notification channel, Slack-style body (Slack, Mattermost, Discord with /slack)
       awx.awx.notification_template:
         name: "{{ awx_notifications.name }}"
         description: "{{ awx_notifications.description }}"
@@ -87,6 +87,27 @@
       when:
         - awx_notifications is defined
         - lookup('ansible.builtin.env', 'NOTIFY_WEBHOOK_URL') | length > 0
+        - lookup('ansible.builtin.env', 'NOTIFY_FORMAT') != 'teams'
+      no_log: true
+
+    - name: Notification channel, Adaptive Card body (Microsoft Teams Workflows webhook)
+      awx.awx.notification_template:
+        name: "{{ awx_notifications.name }}"
+        description: "{{ awx_notifications.description }}"
+        organization: "{{ awx_organization }}"
+        notification_type: webhook
+        notification_configuration:
+          url: "{{ lookup('ansible.builtin.env', 'NOTIFY_WEBHOOK_URL') }}"
+          http_method: POST
+          headers:
+            Content-Type: application/json
+          disable_ssl_verification: false
+        messages: "{{ awx_notifications.messages_teams }}"
+        state: present
+      when:
+        - awx_notifications is defined
+        - lookup('ansible.builtin.env', 'NOTIFY_WEBHOOK_URL') | length > 0
+        - lookup('ansible.builtin.env', 'NOTIFY_FORMAT') == 'teams'
       no_log: true
 
     - name: Remember whether notifications are on

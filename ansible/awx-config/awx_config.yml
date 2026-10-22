@@ -191,6 +191,25 @@ awx_notifications:
         message: !unsafe "Approval timed out"
         body: !unsafe '{"text": ":alarm_clock: AWX approval timed out: \"{{ approval_node_name }}\" {{ workflow_url }}"}'
 
+  # Same alerts as Adaptive Cards, for a Microsoft Teams Workflows webhook. Used when NOTIFY_FORMAT is teams.
+  messages_teams:
+    error:
+      message: !unsafe "FAILED: {{ job_friendly_name }} #{{ job.id }} {{ job.name }}"
+      body: !unsafe '{"type":"message","attachments":[{"contentType":"application/vnd.microsoft.card.adaptive","content":{"$schema":"http://adaptivecards.io/schemas/adaptive-card.json","type":"AdaptiveCard","version":"1.4","body":[{"type":"TextBlock","text":"FAILED: {{ job_friendly_name }} #{{ job.id }} {{ job.name }} {{ url }}","wrap":true,"weight":"Bolder"}]}}]}'  # noqa: yaml[line-length]
+    workflow_approval:
+      running:
+        message: !unsafe "Approval needed"
+        body: !unsafe '{"type":"message","attachments":[{"contentType":"application/vnd.microsoft.card.adaptive","content":{"$schema":"http://adaptivecards.io/schemas/adaptive-card.json","type":"AdaptiveCard","version":"1.4","body":[{"type":"TextBlock","text":"Approval needed: {{ approval_node_name }} {{ workflow_url }}","wrap":true,"weight":"Bolder"}]}}]}'  # noqa: yaml[line-length]
+      approved:
+        message: !unsafe "Approved"
+        body: !unsafe '{"type":"message","attachments":[{"contentType":"application/vnd.microsoft.card.adaptive","content":{"$schema":"http://adaptivecards.io/schemas/adaptive-card.json","type":"AdaptiveCard","version":"1.4","body":[{"type":"TextBlock","text":"Approved: {{ approval_node_name }} {{ workflow_url }}","wrap":true,"weight":"Bolder"}]}}]}'  # noqa: yaml[line-length]
+      denied:
+        message: !unsafe "Denied"
+        body: !unsafe '{"type":"message","attachments":[{"contentType":"application/vnd.microsoft.card.adaptive","content":{"$schema":"http://adaptivecards.io/schemas/adaptive-card.json","type":"AdaptiveCard","version":"1.4","body":[{"type":"TextBlock","text":"Denied: {{ approval_node_name }} {{ workflow_url }}","wrap":true,"weight":"Bolder"}]}}]}'  # noqa: yaml[line-length]
+      timed_out:
+        message: !unsafe "Approval timed out"
+        body: !unsafe '{"type":"message","attachments":[{"contentType":"application/vnd.microsoft.card.adaptive","content":{"$schema":"http://adaptivecards.io/schemas/adaptive-card.json","type":"AdaptiveCard","version":"1.4","body":[{"type":"TextBlock","text":"Approval timed out: {{ approval_node_name }} {{ workflow_url }}","wrap":true,"weight":"Bolder"}]}}]}'  # noqa: yaml[line-length]
+
 # Access control. Three teams with separate duties: look, operate, approve prod.
 # Nobody needs the admin account for daily work. The people in the teams below are demo users that are
 # only created when the DEMO_USER_PASSWORD repository secret is set (see docs/PHASE7.md).
