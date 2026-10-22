@@ -1,0 +1,32 @@
+---
+# Proves which execution environment a job runs in: Ansible version, Python, Google libraries and collections.
+# Run it on the custom EE (template "05 Execution environment check") and read the output.
+- name: Show the execution environment
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: Versions
+      ansible.builtin.debug:
+        msg: >-
+          ansible-core {{ ansible_version.full }}, python at {{ ansible_playbook_python }}
+
+    - name: Google client libraries are importable
+      ansible.builtin.command: >-
+        {{ ansible_playbook_python }} -c "import google.auth, googleapiclient; print(google.auth.__version__)"
+      register: google_auth
+      changed_when: false
+
+    - name: Installed collections
+      ansible.builtin.command: ansible-galaxy collection list --format json
+      register: installed_collections
+      changed_when: false
+
+    - name: Report
+      ansible.builtin.assert:
+        that:
+          - google_auth.stdout | length > 0
+          - "'google.cloud' in installed_collections.stdout"
+          - "'ansible.posix' in installed_collections.stdout"
+        success_msg: "google-auth {{ google_auth.stdout }} and the required collections are present"
+        fail_msg: This execution environment is missing the Google libraries or collections

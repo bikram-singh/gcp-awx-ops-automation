@@ -62,6 +62,7 @@ ROLES=(
   roles/pubsub.admin
   roles/monitoring.admin
   roles/logging.admin
+  roles/artifactregistry.admin
 )
 for role in "${ROLES[@]}"; do
   gcloud projects add-iam-policy-binding "${PROJECT_ID}" \

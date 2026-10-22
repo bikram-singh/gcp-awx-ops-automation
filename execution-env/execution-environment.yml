@@ -1,0 +1,17 @@
+---
+# Custom AWX execution environment, built with ansible-builder (see .github/workflows/ee-build.yml).
+# It starts from the AWX 24.6.1 default EE (the version this platform runs) and adds what this project needs
+# that the default image does not carry, so jobs do not install anything at run time.
+version: 3
+
+images:
+  base_image:
+    name: quay.io/ansible/awx-ee:24.6.1
+
+dependencies:
+  galaxy: requirements.yml
+  python: requirements.txt
+
+additional_build_steps:
+  append_final:
+    - RUN ansible --version && python3 -c "import google.auth, requests; print('google-auth', google.auth.__version__)"

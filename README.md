@@ -44,7 +44,7 @@ More: [Demo script](docs/DEMO.md) | [Teardown](docs/TEARDOWN.md) | [Medium artic
 ├── roles/             Ansible roles with Molecule tests (cis hardening)             (phase 3)
 ├── collections/       requirements.yml read by AWX on project sync
 ├── ansible/awx-config/ AWX configuration as code + job launcher                    (phase 4)
-├── execution-env/     ansible-builder definition                                   (phase 3)
+├── execution-env/     ansible-builder definition of the custom AWX image          (phase 3)
 ├── scripts/bootstrap.sh   one-time: state bucket + Workload Identity Federation
 ├── .github/workflows/infra.yml
 └── docs/              HLD, LLD, runbooks
@@ -94,7 +94,7 @@ Prerequisites: a GCP project with billing, `gcloud`, `terraform >= 1.6`, a GitHu
 
 - [x] Phase 1: Foundation (VPC, GKE, Cloud SQL, AWX)
 - [x] Phase 2: VM fleet with labels, GCE dynamic inventory, first playbooks (see [docs/PHASE2.md](docs/PHASE2.md))
-- [ ] Phase 3: Core roles (patching, CIS hardening, health check) + Molecule + custom EE
+- [x] Phase 3: ansible-lint and Molecule in CI, CIS hardening role, custom execution environment (see [docs/PHASE3.md](docs/PHASE3.md))
 - [x] Phase 4: AWX config-as-code + workflows that apply it and launch jobs (see [docs/PHASE4.md](docs/PHASE4.md))
 - [x] Phase 5: Staged patching workflow (pre-check, snapshot, patch, verify, approval, prod) (see [docs/PHASE5.md](docs/PHASE5.md))
 - [x] Phase 6a: Self-healing, a stopped VM is started again by AWX (see [docs/PHASE6.md](docs/PHASE6.md))

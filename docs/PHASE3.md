@@ -42,3 +42,34 @@ AWX logs in with a key as a non-root user and uses sudo, so refusing root and pa
 4. Run `60` again: every host should report `changed=0`.
 
 Tested here: ansible-lint (production profile) passes, and the role was run twice against a test host (second run `changed=0`) and checked with the same asserts Molecule uses. Molecule itself needs Docker, so its first real run is in the `lint` workflow.
+
+## 3b. Custom execution environment
+
+An execution environment (EE) is the container image AWX runs every job in. The default one is generic. This project builds its own, so the Google libraries and collections are baked in and jobs install nothing at run time.
+
+```
+execution-env/ (definition) --ee-build workflow--> Artifact Registry (awx-ee/gcp-ops) --> AWX pulls it --> jobs run in it
+```
+
+- `execution-env/execution-environment.yml`: ansible-builder definition, based on `quay.io/ansible/awx-ee:24.6.1` (the AWX version this platform runs). Adds `google-auth`, `google-api-python-client`, `requests` and the collections `google.cloud`, `ansible.posix`, `community.general`.
+- `terraform/platform/registry.tf`: the private Docker repository `awx-ee`. The GKE node service account already has `artifactregistry.reader`, so AWX pulls with no stored credential.
+- `.github/workflows/ee-build.yml`: builds on changes to `execution-env/`, authenticates keylessly, pushes `:<sha>` and `:latest`.
+- `awx_config.yml`: registers the EE in AWX (`gcp-ops-ee`) and attaches it to the new template **05 Execution environment check**. Other templates keep the default EE until you set `use_for_all: true`.
+
+### Roll out (order matters)
+
+1. **Give the deployer account registry access** (once, existing project):
+
+   ```bash
+   gcloud projects add-iam-policy-binding gcp-awx-ops \
+     --member="serviceAccount:tf-deployer@gcp-awx-ops.iam.gserviceaccount.com" \
+     --role="roles/artifactregistry.admin"
+   ```
+
+2. Push. `infra` creates the repository (approve `production` for the platform stack).
+3. Run **ee-build** (Actions, Run workflow) and wait for green. The first build takes several minutes.
+4. Run **awx-config** so the EE is registered.
+5. ops-trigger, template `05 Execution environment check`. It should print the ansible-core version and `google-auth ... and the required collections are present`.
+6. Optional: set `use_for_all: true` in `awx_config.yml`, merge, and run `10 Health check` to prove the normal templates work in the new image. Setting it back to `false` does not move templates back, so change them in AWX if you want to undo it.
+
+Tested here: the definition renders with ansible-builder, ansible-lint and tofu fmt pass, and the check playbook fails (as it should) where the libraries are missing. The image build and the pull by AWX run for the first time in step 3 and 5.

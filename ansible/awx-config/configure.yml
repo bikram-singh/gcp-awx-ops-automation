@@ -94,6 +94,15 @@
         notifications_on: >-
           {{ awx_notifications is defined and (lookup('ansible.builtin.env', 'NOTIFY_WEBHOOK_URL') | length > 0) }}
 
+    - name: Custom execution environment
+      awx.awx.execution_environment:
+        name: "{{ awx_execution_environment.name }}"
+        description: Ansible with the Google libraries and collections this project needs
+        image: "{{ awx_execution_environment.image }}"
+        pull: "{{ awx_execution_environment.pull | default('always') }}"
+        state: present
+      when: awx_execution_environment is defined
+
     - name: Job templates
       awx.awx.job_template:
         name: "{{ item.name }}"
@@ -111,6 +120,11 @@
         ask_limit_on_launch: "{{ item.ask_limit | default(false) }}"
         ask_variables_on_launch: "{{ item.ask_variables | default(false) }}"
         ask_inventory_on_launch: false
+        execution_environment: >-
+          {{ awx_execution_environment.name
+          if awx_execution_environment is defined
+          and (awx_execution_environment.use_for_all | default(false) or item.custom_ee | default(false))
+          else omit }}
         notification_templates_error: "{{ [awx_notifications.name] if notifications_on | bool else omit }}"
         state: present
       loop: "{{ awx_templates }}"

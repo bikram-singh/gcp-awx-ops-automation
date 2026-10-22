@@ -13,6 +13,7 @@ on:
         default: "10 Health check"
         options:
           - "00 Connectivity check"
+          - "05 Execution environment check"
           - "10 Health check"
           - "21 Patch Linux DEV (dry run)"
           - "30 Snapshot disks (pre-patch)"

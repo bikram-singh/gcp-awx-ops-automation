@@ -23,7 +23,20 @@ awx_inventory:
     name: gce-dynamic
     source_path: ansible/inventories/gcp_compute.yml
 
+# Custom execution environment (built by the ee-build workflow, see execution-env/ and docs/PHASE3.md).
+# Only template "05 Execution environment check" uses it until you set use_for_all: true.
+awx_execution_environment:
+  name: gcp-ops-ee
+  image: asia-south1-docker.pkg.dev/gcp-awx-ops/awx-ee/gcp-ops:latest
+  pull: always
+  use_for_all: false
+
 awx_templates:
+  - name: "05 Execution environment check"
+    description: Shows which execution environment runs the job, with its Ansible version, Google libraries and collections
+    playbook: ansible/playbooks/ee_check.yml
+    custom_ee: true
+
   - name: "00 Connectivity check"
     description: Proves AWX can log in to every managed VM
     playbook: ansible/playbooks/connectivity_check.yml

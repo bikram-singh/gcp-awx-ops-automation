@@ -34,3 +34,8 @@ output "db_password_secret_id" {
   description = "Secret Manager secret holding the AWX database password."
   value       = google_secret_manager_secret.db_password.secret_id
 }
+
+output "ee_registry" {
+  description = "Docker repository for the custom execution environment."
+  value       = "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.awx_ee.repository_id}"
+}
