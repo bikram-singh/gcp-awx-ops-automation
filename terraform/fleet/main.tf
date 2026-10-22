@@ -60,7 +60,7 @@ resource "google_project_iam_member" "awx_snapshot" {
 }
 
 # Lets AWX start a stopped fleet VM (Phase 6 self-healing). The binding is conditional, so it only works on
-# VMs named like the fleet (web|app|db-<env>-NN) and never on the GKE nodes or anything else in the project.
+# VMs named like the fleet (web-*, app-*, db-*) and never on the GKE nodes. IAM conditions have no regex support.
 resource "google_project_iam_member" "awx_vm_start" {
   project = local.project_id
   role    = "roles/compute.instanceAdmin.v1"
@@ -69,7 +69,7 @@ resource "google_project_iam_member" "awx_vm_start" {
   condition {
     title       = "fleet-vms-only"
     description = "Only the managed fleet VMs, not the GKE nodes"
-    expression  = "resource.type == 'compute.googleapis.com/Instance' && resource.name.matches('^projects/[^/]+/zones/[^/]+/instances/(web|app|db)-(dev|prod)-[0-9]+$')"
+    expression  = "resource.type == 'compute.googleapis.com/Instance' && (resource.name.contains('/instances/web-') || resource.name.contains('/instances/app-') || resource.name.contains('/instances/db-'))"
   }
 }
 

@@ -20,7 +20,7 @@ VM stopped (gcloud, console, API)
 | The bridge **pulls** from Pub/Sub inside the cluster | AWX stays private (ClusterIP). No public URL, no load balancer, no VPC connector, no Cloud Function to secure. Events flow in, nothing flows out to the internet |
 | Audit-log **sink** instead of a Monitoring alert | The log entry names the VM and zone directly, arrives in seconds, and needs no agent on the VM. An alert policy only carries a numeric instance ID |
 | A **least-privilege AWX user** (`selfheal`) | The bridge can run one template and nothing else. It cannot read credentials or change anything in AWX |
-| **Conditional** IAM for starting VMs | AWX may start only VMs named like the fleet (`web|app|db-<env>-NN`), never the GKE nodes |
+| **Conditional** IAM for starting VMs | AWX may start only VMs whose names start with `web-`, `app-` or `db-`, never the GKE nodes |
 | **Opt-out label** | `selfheal=off` on a VM tells the job to leave it stopped. Only VMs with `ansible_managed=true` are ever touched |
 | Standard library only, code in a ConfigMap | No image to build or store. The bridge runs on a stock Python image |
 
