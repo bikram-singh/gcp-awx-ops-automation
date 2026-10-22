@@ -4,7 +4,7 @@ Terraform provisions it. GitHub Actions delivers it. AWX (upstream of Ansible To
 
 ## Status
 
-All phases are built and were run end to end on a real GCP project. 90 screenshots from the live run are in [docs/SCREENSHOTS.md](docs/SCREENSHOTS.md) and the highlights are [below](#screenshots).
+All phases are built and were run end to end on a real GCP project. 90 snapshots from the live run are in [docs/SNAPSHOTS.md](docs/SNAPSHOTS.md) and the highlights are [below](#snapshots).
 
 What was proven on the running platform:
 
@@ -49,7 +49,7 @@ Full design: [docs/HLD.md](docs/HLD.md) and diagrams in [docs/ARCHITECTURE.md](d
 
 ![Platform](docs/img/platform.png)
 
-More: [Demo script](docs/DEMO.md) | [Teardown](docs/TEARDOWN.md) | [Medium article draft](docs/ARTICLE.md) | [Screenshots](docs/SCREENSHOTS.md)
+More: [Demo script](docs/DEMO.md) | [Teardown](docs/TEARDOWN.md) | [Medium article draft](docs/ARTICLE.md) | [Snapshots](docs/SNAPSHOTS.md)
 
 ## Repo layout
 
@@ -68,7 +68,7 @@ More: [Demo script](docs/DEMO.md) | [Teardown](docs/TEARDOWN.md) | [Medium artic
 ├── execution-env/     ansible-builder definition of the custom AWX image          (phase 3)
 ├── scripts/bootstrap.sh   one-time: state bucket + Workload Identity Federation
 ├── .github/workflows/ infra, awx-config, ops-trigger, daily-report, lint, ee-build
-└── docs/              HLD, architecture, phase guides, runbooks, screenshots/
+└── docs/              HLD, architecture, phase guides, runbooks, snapshots/
 ```
 
 ## Phase 1: stand up the platform
@@ -111,87 +111,87 @@ Prerequisites: a GCP project with billing, `gcloud`, `terraform >= 1.6`, a GitHu
    # open http://localhost:8080  user: admin
    ```
 
-## Screenshots
+## Snapshots
 
-Highlights from the live run. Every screenshot, in order and with captions, is in [docs/SCREENSHOTS.md](docs/SCREENSHOTS.md). The files are in `docs/screenshots/`, one folder per phase.
+Highlights from the live run. Every snapshot, in order and with captions, is in [docs/SNAPSHOTS.md](docs/SNAPSHOTS.md). The files are in `docs/snapshots/`, one folder per phase.
 
 ### Phase 1: Platform foundation
 
 A private GKE cluster, Cloud SQL on a private IP only, and keyless GitHub access through Workload Identity Federation. All built by Terraform.
 
-![Private GKE cluster awxplat-gke, healthy](docs/screenshots/01-platform/01-gke-cluster-overview.png)
+![Private GKE cluster awxplat-gke, healthy](docs/snapshots/01-platform/01-gke-cluster-overview.png)
 
-![Cloud SQL Postgres 15 with a private IP only](docs/screenshots/01-platform/04-cloudsql-private-ip.png)
+![Cloud SQL Postgres 15 with a private IP only](docs/snapshots/01-platform/04-cloudsql-private-ip.png)
 
-![Workload Identity Federation pool for GitHub Actions](docs/screenshots/01-platform/07-wif-github-pool.png)
+![Workload Identity Federation pool for GitHub Actions](docs/snapshots/01-platform/07-wif-github-pool.png)
 
 ### Phase 2: AWX credential, project and inventory
 
 The SSH credential (stored encrypted), the project synced from Git, and a dynamic inventory built from VM labels with no service account key.
 
-![Machine credential fleet-ssh (key stored encrypted)](docs/screenshots/02-awx-setup/02-credential-fleet-ssh.png)
+![Machine credential fleet-ssh (key stored encrypted)](docs/snapshots/02-awx-setup/02-credential-fleet-ssh.png)
 
-![Inventory source sync succeeded](docs/screenshots/02-awx-setup/07-inventory-source-synced.png)
+![Inventory source sync succeeded](docs/snapshots/02-awx-setup/07-inventory-source-synced.png)
 
-![Six imported hosts](docs/screenshots/02-awx-setup/10-inventory-hosts.png)
+![Six imported hosts](docs/snapshots/02-awx-setup/10-inventory-hosts.png)
 
 ### Phase 2: first job templates
 
 Connectivity check, health report and a rolling patch with reboot and post-check.
 
-![Job output: every host answered](docs/screenshots/03-first-playbooks/04-job-00-output.png)
+![Job output: every host answered](docs/snapshots/03-first-playbooks/04-job-00-output.png)
 
-![Health report output](docs/screenshots/03-first-playbooks/09-job-10-output.png)
+![Health report output](docs/snapshots/03-first-playbooks/09-job-10-output.png)
 
-![Rolling patch with reboot and post-check](docs/screenshots/03-first-playbooks/14-job-20-output.png)
+![Rolling patch with reboot and post-check](docs/snapshots/03-first-playbooks/14-job-20-output.png)
 
 ### Phases 4 and 5: ops-trigger and the staged patching workflow
 
 Jobs launched from GitHub Actions (`ops-trigger`), and the staged patching workflow: snapshot, patch dev, verify, human approval, then prod.
 
-![Workflow graph: precheck, snapshot, patch, verify, approve, prod](docs/screenshots/04-ops-trigger-and-patching/09-workflow-50-graph.png)
+![Workflow graph: precheck, snapshot, patch, verify, approve, prod](docs/snapshots/04-ops-trigger-and-patching/09-workflow-50-graph.png)
 
-![AWX workflow approval: Promote patching to prod?](docs/screenshots/04-ops-trigger-and-patching/12-awx-workflow-approval.png)
+![AWX workflow approval: Promote patching to prod?](docs/snapshots/04-ops-trigger-and-patching/12-awx-workflow-approval.png)
 
-![Dev and prod snapshots taken before patching](docs/screenshots/04-ops-trigger-and-patching/14-gcp-snapshots-all.png)
+![Dev and prod snapshots taken before patching](docs/snapshots/04-ops-trigger-and-patching/14-gcp-snapshots-all.png)
 
 ### Phases 6 and 8: self-healing and provisioning callback
 
 A stopped VM is started again automatically, and a new VM is onboarded by an audit-log event.
 
-![Stop web-dev-02; the bridge launches the heal job](docs/screenshots/05-self-healing-and-onboarding/03-self-heal-demo.png)
+![Stop web-dev-02; the bridge launches the heal job](docs/snapshots/05-self-healing-and-onboarding/03-self-heal-demo.png)
 
-![Onboarding job started by the audit-log event](docs/screenshots/05-self-healing-and-onboarding/06-job-45-onboard-output.png)
+![Onboarding job started by the audit-log event](docs/snapshots/05-self-healing-and-onboarding/06-job-45-onboard-output.png)
 
 ### Phase 3a: lint, Molecule and CIS hardening
 
 ansible-lint and Molecule on every change, a CIS-style hardening role, a dry run before the real run, and a second run that changes nothing (`changed=0`).
 
-![lint workflow run, both jobs green](docs/screenshots/06-hardening-and-lint/02-lint-molecule-green-2.png)
+![lint workflow run, both jobs green](docs/snapshots/06-hardening-and-lint/02-lint-molecule-green-2.png)
 
-![Hardening applied to prod](docs/screenshots/06-hardening-and-lint/14-job-177-harden-prod.png)
+![Hardening applied to prod](docs/snapshots/06-hardening-and-lint/14-job-177-harden-prod.png)
 
-![Second run: changed=0 on every host (idempotent)](docs/screenshots/06-hardening-and-lint/16-job-189-idempotent.png)
+![Second run: changed=0 on every host (idempotent)](docs/snapshots/06-hardening-and-lint/16-job-189-idempotent.png)
 
 ### Phase 3b: custom execution environment
 
 A custom execution environment built with ansible-builder and pushed to Artifact Registry.
 
-![ee-build pushes the image to Artifact Registry](docs/screenshots/07-execution-environment/03-ee-build.png)
+![ee-build pushes the image to Artifact Registry](docs/snapshots/07-execution-environment/03-ee-build.png)
 
 ### Phase 9: optional HTTPS entry
 
 Optional HTTPS entry: global load balancer, Google-managed certificate and a Cloud Armor allowlist.
 
-![Managed certificate: PROVISIONING, then ACTIVE](docs/screenshots/08-https-ingress/04-cli-certificate-provisioning-active.png)
+![Managed certificate: PROVISIONING, then ACTIVE](docs/snapshots/08-https-ingress/04-cli-certificate-provisioning-active.png)
 
-![AWX dashboard at https://awx.gcpcloudhub.in](docs/screenshots/08-https-ingress/06-awx-dashboard-https.png)
+![AWX dashboard at https://awx.gcpcloudhub.in](docs/snapshots/08-https-ingress/06-awx-dashboard-https.png)
 
 ### Phase 8: notifications (7b)
 
 A failed job and a succeeded job each send a chat alert with a link that opens the job in AWX.
 
-![Discord: failed and succeeded alerts with real AWX links](docs/screenshots/09-notifications/07-discord-failed-and-success-alerts.png)
+![Discord: failed and succeeded alerts with real AWX links](docs/snapshots/09-notifications/07-discord-failed-and-success-alerts.png)
 
 
 ## Roadmap
@@ -219,7 +219,7 @@ A failed job and a succeeded job each send a chat alert with a link that opens t
 | [docs/DEMO.md](docs/DEMO.md) | 10-minute demo script and interview talking points |
 | [docs/TEARDOWN.md](docs/TEARDOWN.md) | Destroy everything in the right order |
 | [docs/ARTICLE.md](docs/ARTICLE.md) | Medium article draft |
-| [docs/SCREENSHOTS.md](docs/SCREENSHOTS.md) | All screenshots from the live run, by phase |
+| [docs/SNAPSHOTS.md](docs/SNAPSHOTS.md) | All snapshots from the live run, by phase |
 
 ## Cost note
 
