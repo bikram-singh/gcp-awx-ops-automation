@@ -1,0 +1,11 @@
+---
+- name: Reload sshd
+  ansible.builtin.service:
+    name: ssh
+    state: reloaded
+  when: cis_reload_sshd | bool
+
+- name: Apply sysctl settings
+  ansible.builtin.command: sysctl --system
+  changed_when: true
+  when: cis_apply_sysctl | bool

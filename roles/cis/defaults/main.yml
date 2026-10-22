@@ -1,0 +1,36 @@
+---
+# SSH. AWX logs in as a non-root user with a key and uses sudo, so root login and passwords can be refused.
+cis_ssh_max_auth_tries: 4
+cis_ssh_client_alive_interval: 300
+cis_ssh_client_alive_count_max: 2
+cis_ssh_login_grace_time: 60
+cis_reload_sshd: true
+
+# Kernel network settings and core dump handling (written to /etc/sysctl.d, applied when not in a container).
+cis_sysctl:
+  net.ipv4.conf.all.accept_redirects: 0
+  net.ipv4.conf.default.accept_redirects: 0
+  net.ipv4.conf.all.send_redirects: 0
+  net.ipv4.conf.default.send_redirects: 0
+  net.ipv4.conf.all.accept_source_route: 0
+  net.ipv4.conf.all.rp_filter: 1
+  net.ipv4.conf.all.log_martians: 1
+  net.ipv4.tcp_syncookies: 1
+  net.ipv4.icmp_echo_ignore_broadcasts: 1
+  kernel.randomize_va_space: 2
+  fs.suid_dumpable: 0
+cis_apply_sysctl: "{{ ansible_facts['virtualization_type'] | default('') not in ['docker', 'container', 'podman', 'lxc'] }}"
+
+# Filesystems that a server does not need.
+cis_disabled_filesystems: [cramfs, freevxfs, jffs2, hfs, hfsplus, udf]
+
+# Owner, group and mode of sensitive files.
+cis_file_permissions:
+  - {path: /etc/passwd, owner: root, group: root, mode: "0644"}
+  - {path: /etc/group, owner: root, group: root, mode: "0644"}
+  - {path: /etc/shadow, owner: root, group: shadow, mode: "0640"}
+  - {path: /etc/gshadow, owner: root, group: shadow, mode: "0640"}
+  - {path: /etc/ssh/sshd_config, owner: root, group: root, mode: "0600"}
+
+cis_banner: |
+  Authorized use only. Activity on this system is logged and monitored.

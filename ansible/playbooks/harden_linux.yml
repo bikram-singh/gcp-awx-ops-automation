@@ -1,0 +1,14 @@
+---
+# CIS-aligned baseline hardening (role cis), applied one host at a time.
+# Safe first step: run the "61 Harden Linux DEV (dry run)" template (check mode) and read the diff.
+# Extra vars (optional):
+#   target_hosts   inventory pattern, e.g. env_dev or role_web   (default: all)
+#   cis_ssh_max_auth_tries and the other role defaults can be overridden here too
+- name: CIS baseline hardening
+  hosts: "{{ target_hosts | default('all') }}"
+  become: true
+  gather_facts: true
+  serial: 1
+  max_fail_percentage: 0
+  roles:
+    - role: cis

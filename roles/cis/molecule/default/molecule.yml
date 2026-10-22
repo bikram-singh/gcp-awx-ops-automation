@@ -1,0 +1,20 @@
+---
+driver:
+  name: docker
+platforms:
+  - name: debian12
+    image: geerlingguy/docker-debian12-ansible:latest
+    pre_build_image: true
+    privileged: true
+    cgroupns_mode: host
+    command: ""
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+provisioner:
+  name: ansible
+  inventory:
+    group_vars:
+      all:
+        cis_reload_sshd: false
+verifier:
+  name: ansible

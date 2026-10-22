@@ -1,0 +1,51 @@
+---
+- name: Verify
+  hosts: all
+  become: true
+  gather_facts: false
+  tasks:
+    - name: Read the SSH hardening drop-in
+      ansible.builtin.slurp:
+        src: /etc/ssh/sshd_config.d/50-cis-hardening.conf
+      register: sshd_dropin
+
+    - name: Root login and passwords are refused
+      ansible.builtin.assert:
+        that:
+          - "'PermitRootLogin no' in (sshd_dropin.content | b64decode)"
+          - "'PasswordAuthentication no' in (sshd_dropin.content | b64decode)"
+          - "'MaxAuthTries 4' in (sshd_dropin.content | b64decode)"
+
+    - name: The resulting sshd configuration is valid
+      ansible.builtin.command: /usr/sbin/sshd -t
+      changed_when: false
+
+    - name: Check sensitive file permissions
+      ansible.builtin.stat:
+        path: "{{ item.path }}"
+      register: perms
+      loop:
+        - {path: /etc/shadow, mode: "0640"}
+        - {path: /etc/passwd, mode: "0644"}
+        - {path: /etc/ssh/sshd_config, mode: "0600"}
+      loop_control:
+        label: "{{ item.path }}"
+
+    - name: Permissions are as required
+      ansible.builtin.assert:
+        that: item.stat.mode == item.item.mode
+        fail_msg: "{{ item.item.path }} has mode {{ item.stat.mode }}"
+        quiet: true
+      loop: "{{ perms.results }}"
+      loop_control:
+        label: "{{ item.item.path }}"
+
+    - name: Sysctl and filesystem files exist
+      ansible.builtin.stat:
+        path: "{{ item }}"
+      register: files
+      loop:
+        - /etc/sysctl.d/60-cis.conf
+        - /etc/modprobe.d/cis-cramfs.conf
+        - /etc/issue.net
+      failed_when: not files.stat.exists

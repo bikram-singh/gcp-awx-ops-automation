@@ -66,6 +66,20 @@ awx_templates:
     verbosity: 1
     ask_variables: true
 
+  - name: "60 Harden Linux (CIS baseline)"
+    description: Applies the cis role (SSH, kernel network settings, file permissions, banner), one host at a time
+    playbook: ansible/playbooks/harden_linux.yml
+    ask_limit: true
+    ask_variables: true
+
+  - name: "61 Harden Linux DEV (dry run)"
+    description: Check mode of the hardening on env_dev. Shows what would change, changes nothing
+    playbook: ansible/playbooks/harden_linux.yml
+    job_type: check
+    limit: env_dev
+    ask_limit: true
+    ask_variables: true
+
   - name: "45 Onboard new VM"
     description: Provisioning callback. Waits for SSH, applies a baseline, checks health on one new VM. Launched by the bridge when a fleet VM is created
     playbook: ansible/playbooks/onboard_vm.yml

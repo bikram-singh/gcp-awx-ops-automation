@@ -18,6 +18,8 @@ on:
           - "30 Snapshot disks (pre-patch)"
           - "40 Heal: start stopped VM"
           - "45 Onboard new VM"
+          - "61 Harden Linux DEV (dry run)"
+          - "60 Harden Linux (CIS baseline)"
           - "20 Patch Linux (rolling)"
           - "50 Staged patching (dev, approve, prod)"
       limit:
@@ -38,7 +40,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 75
     # Real patching needs a reviewer on the production environment; read-only templates do not.
-    environment: ${{ (inputs.template == '20 Patch Linux (rolling)' || startsWith(inputs.template, '50 ')) && 'production' || '' }}
+    environment: ${{ (inputs.template == '20 Patch Linux (rolling)' || startsWith(inputs.template, '50 ') || startsWith(inputs.template, '60 ')) && 'production' || '' }}
     steps:
       - uses: actions/checkout@v4
 

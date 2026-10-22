@@ -1,0 +1,12 @@
+---
+galaxy_info:
+  author: bikram-singh
+  description: CIS-aligned baseline hardening for Debian 12 (SSH, kernel network settings, file permissions, banner)
+  license: MIT
+  min_ansible_version: "2.14"
+  platforms:
+    - name: Debian
+      versions:
+        - bookworm
+  galaxy_tags: [hardening, cis, debian]
+dependencies: []

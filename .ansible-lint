@@ -1,0 +1,9 @@
+---
+# Lint rules for playbooks, roles and AWX config. CI runs `ansible-lint` from the repository root.
+profile: production
+exclude_paths:
+  - terraform/
+  - docs/
+  - .github/
+  - execution-env/
+  - "**/molecule/"

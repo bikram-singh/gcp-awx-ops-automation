@@ -41,6 +41,7 @@ More: [Demo script](docs/DEMO.md) | [Teardown](docs/TEARDOWN.md) | [Medium artic
 │   ├── fleet/         Labelled private VMs + read-only inventory service account   (stack 3)
 │   └── selfheal/      Pub/Sub, log sink and in-cluster bridge for self-healing     (stack 4)
 ├── ansible/           playbooks, GCE dynamic inventory                             (phase 2+)
+├── roles/             Ansible roles with Molecule tests (cis hardening)             (phase 3)
 ├── collections/       requirements.yml read by AWX on project sync
 ├── ansible/awx-config/ AWX configuration as code + job launcher                    (phase 4)
 ├── execution-env/     ansible-builder definition                                   (phase 3)

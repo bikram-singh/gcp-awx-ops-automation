@@ -1,0 +1,79 @@
+---
+- name: SSH daemon hardening drop-in (checked with sshd -t before it is installed)
+  ansible.builtin.copy:
+    dest: /etc/ssh/sshd_config.d/50-cis-hardening.conf
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      # Managed by AWX (role cis). Do not edit by hand.
+      PermitRootLogin no
+      PasswordAuthentication no
+      PermitEmptyPasswords no
+      X11Forwarding no
+      MaxAuthTries {{ cis_ssh_max_auth_tries }}
+      LoginGraceTime {{ cis_ssh_login_grace_time }}
+      ClientAliveInterval {{ cis_ssh_client_alive_interval }}
+      ClientAliveCountMax {{ cis_ssh_client_alive_count_max }}
+      Banner /etc/issue.net
+    validate: /usr/sbin/sshd -t -f %s
+  notify: Reload sshd
+  tags: [ssh]
+
+- name: Login banner
+  ansible.builtin.copy:
+    dest: "{{ item }}"
+    content: "{{ cis_banner }}"
+    owner: root
+    group: root
+    mode: "0644"
+  loop:
+    - /etc/issue
+    - /etc/issue.net
+  tags: [banner]
+
+- name: Kernel network and core dump settings
+  ansible.builtin.copy:
+    dest: /etc/sysctl.d/60-cis.conf
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      # Managed by AWX (role cis). Do not edit by hand.
+      {% for key, value in cis_sysctl.items() %}
+      {{ key }} = {{ value }}
+      {% endfor %}
+  notify: Apply sysctl settings
+  tags: [sysctl]
+
+- name: Directory for module rules exists
+  ansible.builtin.file:
+    path: /etc/modprobe.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  tags: [filesystems]
+
+- name: Block unused filesystem modules
+  ansible.builtin.copy:
+    dest: "/etc/modprobe.d/cis-{{ item }}.conf"
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      install {{ item }} /bin/false
+      blacklist {{ item }}
+  loop: "{{ cis_disabled_filesystems }}"
+  tags: [filesystems]
+
+- name: Permissions on sensitive files
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    owner: "{{ item.owner }}"
+    group: "{{ item.group }}"
+    mode: "{{ item.mode }}"
+  loop: "{{ cis_file_permissions }}"
+  loop_control:
+    label: "{{ item.path }}"
+  tags: [permissions]
