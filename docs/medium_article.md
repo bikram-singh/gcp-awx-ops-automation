@@ -18,9 +18,9 @@ Building servers is the easy part. The hard part starts the next morning: patchi
 
 The result is a platform where Terraform provisions everything, GitHub Actions delivers it without a single stored key, and AWX (the open-source upstream of Ansible Tower) runs the operations: scheduled, approved, audited, tested, and in two cases, fully event-driven.
 
-## ❓ Why this project? The problem with Day-2
+## ❓ Why this project? The problem with daily operations
 
-Most teams are good at Day-1. Infrastructure as code builds networks, clusters and VMs, and a pipeline applies it. Then Day-2 begins, and the discipline quietly disappears:
+Most teams are good at building infrastructure. Infrastructure as code creates networks, clusters and VMs, and a pipeline applies it. Then the daily running of it begins, and the discipline quietly disappears:
 
 - **Snowflake servers.** Patching and hardening done by hand means no two machines are quite the same.
 - **Slow, manual change.** A patch window is a person with a runbook and a terminal. It is slow and easy to get wrong.
@@ -168,7 +168,7 @@ AWX is configured by a playbook using the `awx.awx` collection. Credentials, pro
 
 GitHub authenticates to GCP through OIDC. The AWX API is not on the internet, so the workflow gets cluster credentials, port-forwards to the AWX service, and talks to it locally. The VMs have no public IPs.
 
-## 🔹 Day-2 in practice
+## 🔹 Daily operations in practice
 
 **Self-service operations.** A GitHub workflow, `ops-trigger`, lets me launch a template by name, with a limit and extra variables, and waits for the result. Jobs 29 and 35 were the first correct runs, after a bug I describe below.
 
