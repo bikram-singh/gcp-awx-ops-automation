@@ -92,7 +92,7 @@ Prerequisites: a GCP project with billing, `gcloud`, `terraform >= 1.6`, a GitHu
 - [ ] Phase 3: Core roles (patching, CIS hardening, health check) + Molecule + custom EE
 - [x] Phase 4: AWX config-as-code + workflows that apply it and launch jobs (see [docs/PHASE4.md](docs/PHASE4.md))
 - [x] Phase 5: Staged patching workflow (pre-check, snapshot, patch, verify, approval, prod) (see [docs/PHASE5.md](docs/PHASE5.md))
-- [ ] Phase 6a (code written, pending first run): Self-healing, a stopped VM is started again by AWX (see [docs/PHASE6.md](docs/PHASE6.md))
+- [x] Phase 6a: Self-healing, a stopped VM is started again by AWX (see [docs/PHASE6.md](docs/PHASE6.md))
 - [ ] Phase 6b: Provisioning callback (new VMs configure themselves on boot)
 - [ ] Phase 7: RBAC, notifications, daily report, docs, demo, article
 
