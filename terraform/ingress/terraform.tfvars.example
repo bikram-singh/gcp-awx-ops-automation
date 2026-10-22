@@ -1,0 +1,5 @@
+state_bucket = "your-terraform-state-bucket"
+
+# Leave both empty to keep AWX private (nothing is created).
+domain        = "awx.example.com"
+allowed_cidrs = ["203.0.113.10/32"]

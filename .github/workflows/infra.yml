@@ -9,6 +9,8 @@ name: infra
 #   MASTER_AUTHORIZED_CIDRS  JSON list, e.g. [{"cidr":"203.0.113.10/32","display_name":"admin"}]
 #   SSH_PUBLIC_KEY           public key for the fleet "ansible" user (needed by the fleet stack)
 #   RUNNER_LABEL             self-hosted runner label (default: ubuntu-latest)
+#   AWX_DOMAIN               public host name for AWX, e.g. awx.example.com. Empty = AWX stays private
+#   AWX_ALLOWED_CIDRS        JSON list of source ranges allowed to reach AWX, e.g. ["203.0.113.10/32"]
 
 on:
   pull_request:
@@ -37,6 +39,8 @@ env:
   TF_VAR_state_bucket: ${{ vars.TF_STATE_BUCKET }}
   TF_VAR_ssh_public_key: ${{ vars.SSH_PUBLIC_KEY }}
   TF_VAR_master_authorized_cidrs: ${{ vars.MASTER_AUTHORIZED_CIDRS || '[]' }}
+  TF_VAR_domain: ${{ vars.AWX_DOMAIN }}
+  TF_VAR_allowed_cidrs: ${{ vars.AWX_ALLOWED_CIDRS || '[]' }}
 
 jobs:
   validate:
@@ -45,7 +49,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        stack: [platform, awx, fleet, selfheal]
+        stack: [platform, awx, fleet, selfheal, ingress]
     defaults:
       run:
         working-directory: terraform/${{ matrix.stack }}
@@ -73,7 +77,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        stack: [platform, awx, fleet, selfheal]
+        stack: [platform, awx, fleet, selfheal, ingress]
     # The awx stack reads platform outputs from remote state, so on the very first
     # PR (before platform is applied) its plan cannot succeed. Do not block on it.
     continue-on-error: ${{ matrix.stack != 'platform' }}
@@ -116,7 +120,7 @@ jobs:
       fail-fast: true
       max-parallel: 1 # platform first, then awx
       matrix:
-        stack: [platform, awx, fleet, selfheal]
+        stack: [platform, awx, fleet, selfheal, ingress]
     defaults:
       run:
         working-directory: terraform/${{ matrix.stack }}

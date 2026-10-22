@@ -1,6 +1,6 @@
 # Teardown (stop the cost)
 
-GKE nodes and Cloud SQL are the main cost. Destroy in reverse order of creation: **selfheal, fleet, awx, platform**.
+GKE nodes and Cloud SQL are the main cost. Destroy in reverse order of creation: **ingress (if you created it), selfheal, fleet, awx, platform**.
 
 Backend bucket: `gcp-awx-ops-tfstate`. Project: `gcp-awx-ops`.
 
@@ -16,26 +16,34 @@ Stopped VMs trigger self-healing. Destroying `selfheal` first removes the sink a
 
 ## 1. Destroy the stacks
 
-Each stack needs its required variables, even for destroy:
+Each stack needs only its required variables, even for destroy. Passing a variable a stack does not declare is an error, so use exactly these:
 
 | Stack | Variables |
 |---|---|
-| selfheal | `project_id`, `state_bucket` |
-| fleet | `project_id`, `state_bucket`, `ssh_public_key` |
-| awx | `project_id`, `state_bucket` |
+| ingress (only if created) | `state_bucket` |
+| selfheal | `state_bucket` |
+| fleet | `state_bucket`, `ssh_public_key` |
+| awx | `state_bucket` |
 | platform | `project_id` |
 
 ```bash
-for s in selfheal fleet awx platform; do
-  cd terraform/$s
-  terraform init -input=false -backend-config="bucket=$STATE_BUCKET"
-  terraform destroy -input=false \
-    -var="project_id=$PROJECT_ID" \
-    $( [ $s != platform ] && echo -var="state_bucket=$STATE_BUCKET" ) \
-    $( [ $s = fleet ] && echo -var="ssh_public_key=$(cat ~/.ssh/id_rsa.pub)" )
-  cd ../..
-done
+SSH_PUB="$(cat ~/.ssh/awx_fleet.pub)"   # the public key you used for the fleet
+
+destroy() {   # destroy <stack> [extra -var arguments]
+  local stack=$1; shift
+  ( cd "terraform/$stack" \
+    && terraform init -input=false -backend-config="bucket=$STATE_BUCKET" \
+    && terraform destroy -input=false "$@" )
+}
+
+destroy ingress  -var="state_bucket=$STATE_BUCKET"      # skip if you never created it
+destroy selfheal -var="state_bucket=$STATE_BUCKET"
+destroy fleet    -var="state_bucket=$STATE_BUCKET" -var="ssh_public_key=$SSH_PUB"
+destroy awx      -var="state_bucket=$STATE_BUCKET"
+destroy platform -var="project_id=$PROJECT_ID"
 ```
+
+Run them one at a time and stop if one fails.
 
 Cloud SQL has `db_deletion_protection`. If destroy of `platform` is refused, set `db_deletion_protection = false` in `terraform.tfvars`, run `terraform apply`, then destroy again.
 

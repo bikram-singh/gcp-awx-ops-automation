@@ -39,7 +39,8 @@ More: [Demo script](docs/DEMO.md) | [Teardown](docs/TEARDOWN.md) | [Medium artic
 │   ├── platform/      VPC, NAT, firewall, private GKE, Cloud SQL, Secret Manager   (stack 1)
 │   ├── awx/           AWX Operator (Helm) + AWX instance                           (stack 2)
 │   ├── fleet/         Labelled private VMs + read-only inventory service account   (stack 3)
-│   └── selfheal/      Pub/Sub, log sink and in-cluster bridge for self-healing     (stack 4)
+│   ├── selfheal/      Pub/Sub, log sink and in-cluster bridge for self-healing     (stack 4)
+│   └── ingress/       Optional HTTPS entry to AWX (load balancer, certificate, allowlist) (stack 5)
 ├── ansible/           playbooks, GCE dynamic inventory                             (phase 2+)
 ├── roles/             Ansible roles with Molecule tests (cis hardening)             (phase 3)
 ├── collections/       requirements.yml read by AWX on project sync
@@ -110,4 +111,4 @@ GKE nodes and Cloud SQL are the main cost. Use `terraform destroy` (awx stack fi
 ## Known limitations (lab vs production)
 
 - The GKE control-plane endpoint is public but restricted by `master_authorized_cidrs`, so hosted GitHub runners can reach it. In production, use a self-hosted runner inside the VPC or the Connect Gateway and a fully private endpoint.
-- AWX is exposed through `kubectl port-forward` in Phase 1. Managed ingress with a Google-managed certificate is added in a later phase.
+- AWX is reached through `kubectl port-forward` by default. An optional HTTPS entry with a Google-managed certificate and a Cloud Armor allowlist is in [docs/INGRESS.md](docs/INGRESS.md); it is off until you set `AWX_DOMAIN` and `AWX_ALLOWED_CIDRS`.
