@@ -21,7 +21,7 @@
 
 Terraform provisions it. GitHub Actions delivers it. AWX (upstream of Ansible Tower / Automation Controller) runs the daily operations.
 
-📝 **Medium Article:** draft in [docs/medium_article.md](docs/medium_article.md) (link added on publish)
+📝 **Medium Article:** [Ansible Ops Platform on GCP: Private GKE, AWX, Workload Identity and Event-Driven Self-Healing](https://medium.com/@bikram23march/ansible-ops-platform-on-gcp-67d04193ef01) · source in [docs/medium_article.md](docs/medium_article.md)
 
 ![Ansible Ops Platform on GCP: architecture](docs/architecture/architecture-gcp.svg)
 
@@ -156,7 +156,7 @@ Vector version: [docs/architecture/architecture-gcp.svg](docs/architecture/archi
 
 ![Platform](docs/img/platform.png)
 
-More: [Demo script](docs/DEMO.md) | [Teardown](docs/TEARDOWN.md) | [Medium article draft](docs/medium_article.md) | [Snapshots](docs/SNAPSHOTS.md)
+More: [Demo script](docs/DEMO.md) | [Teardown](docs/TEARDOWN.md) | [Medium article](https://medium.com/@bikram23march/ansible-ops-platform-on-gcp-67d04193ef01) | [Snapshots](docs/SNAPSHOTS.md)
 
 ### 🔄 Build Order
 
@@ -667,7 +667,7 @@ Real screenshots taken from the Google Cloud console, the terminal, AWX and GitH
 | 🌐 [docs/INGRESS.md](docs/INGRESS.md) | Optional HTTPS entry |
 | 🎬 [docs/DEMO.md](docs/DEMO.md) | 10-minute demo script and interview talking points |
 | 💥 [docs/TEARDOWN.md](docs/TEARDOWN.md) | Destroy everything in the right order |
-| 📝 [docs/medium_article.md](docs/medium_article.md) | Medium article draft |
+| 📝 [docs/medium_article.md](docs/medium_article.md) | Medium article ([read on Medium](https://medium.com/@bikram23march/ansible-ops-platform-on-gcp-67d04193ef01)), source file |
 | 📸 [docs/SNAPSHOTS.md](docs/SNAPSHOTS.md) | All snapshots from the live run, by phase |
 
 ---
