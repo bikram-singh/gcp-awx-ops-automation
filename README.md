@@ -2,7 +2,7 @@
 
 # ⚙️ gcp-awx-ops-automation
 
-### Enterprise Day-2 Operations Automation Platform on GCP
+### Ansible Ops Platform on GCP
 
 **Terraform provisions it · GitHub Actions delivers it · AWX (Ansible) runs it · Events heal it**
 

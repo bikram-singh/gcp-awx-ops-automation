@@ -1,4 +1,4 @@
-# 📝 I built the platform that runs my servers: Day-2 operations on GCP with Terraform, GitHub Actions and AWX
+# 📝 I built the Ansible Ops Platform on GCP: Day-2 operations with Terraform, GitHub Actions and AWX
 
 > 🏠 [README](../README.md) · 🏛️ [HLD](HLD.md) · 🗺️ [Architecture](ARCHITECTURE.md) · 🎬 [Demo](DEMO.md) · 💥 [Teardown](TEARDOWN.md) · 📸 [Snapshots](SNAPSHOTS.md)
 

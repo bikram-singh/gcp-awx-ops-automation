@@ -1,4 +1,4 @@
-# 🏛️ High-Level Design: Day-2 Operations Automation Platform on GCP
+# 🏛️ High-Level Design: Ansible Ops Platform on GCP
 
 > 🏠 [README](../README.md) · 🏛️ [HLD](HLD.md) · 🗺️ [Architecture](ARCHITECTURE.md) · 🎬 [Demo](DEMO.md) · 💥 [Teardown](TEARDOWN.md) · 📸 [Snapshots](SNAPSHOTS.md)
 
