@@ -51,6 +51,14 @@ resource "google_project_iam_member" "awx_inventory" {
   member  = "serviceAccount:${google_service_account.awx_inventory.email}"
 }
 
+# Lets AWX take pre-patch disk snapshots (Phase 5). compute.storageAdmin is the narrowest predefined role
+# that allows it. In production, replace it with a custom role holding only the snapshot permissions.
+resource "google_project_iam_member" "awx_snapshot" {
+  project = local.project_id
+  role    = "roles/compute.storageAdmin"
+  member  = "serviceAccount:${google_service_account.awx_inventory.email}"
+}
+
 # Workload Identity: AWX job pods (Kubernetes service accounts in the awx namespace) act as
 # the inventory service account without any key. The org policy blocks key creation anyway.
 resource "google_service_account_iam_member" "awx_inventory_workload_identity" {

@@ -54,6 +54,63 @@ awx_templates:
     ask_limit: true
     ask_variables: true
 
+  - name: "30 Snapshot disks (pre-patch)"
+    description: Boot-disk snapshot of each target VM, the rollback point before patching
+    playbook: ansible/playbooks/snapshot_disks.yml
+    ask_limit: true
+    ask_variables: true
+
+# Workflows: chains of templates with success/approval gates. Each node has an id and lists the ids that run on success.
+# A node either runs a template or is an approval gate. Node limits override the template's prompt-on-launch limit.
+awx_workflows:
+  - name: "50 Staged patching (dev, approve, prod)"
+    description: Pre-check, snapshot, patch and verify dev, wait for a human approval, then do the same for prod
+    nodes:
+      - id: precheck
+        template: "10 Health check"
+        limit: all
+        success: [snap_dev]
+
+      - id: snap_dev
+        template: "30 Snapshot disks (pre-patch)"
+        limit: env_dev
+        success: [patch_dev]
+
+      - id: patch_dev
+        template: "20 Patch Linux (rolling)"
+        limit: env_dev
+        extra_data: {patch_batch_size: 1, patch_max_fail_percent: 0}
+        success: [verify_dev]
+
+      - id: verify_dev
+        template: "10 Health check"
+        limit: env_dev
+        extra_data: {fail_on_issues: true}
+        success: [approve_prod]
+
+      - id: approve_prod
+        approval:
+          name: Promote patching to prod?
+          description: Dev was patched and verified. Approve to snapshot and patch env_prod, deny to stop here
+          timeout: 86400
+        success: [snap_prod]
+
+      - id: snap_prod
+        template: "30 Snapshot disks (pre-patch)"
+        limit: env_prod
+        success: [patch_prod]
+
+      - id: patch_prod
+        template: "20 Patch Linux (rolling)"
+        limit: env_prod
+        extra_data: {patch_batch_size: 1, patch_max_fail_percent: 0}
+        success: [verify_prod]
+
+      - id: verify_prod
+        template: "10 Health check"
+        limit: env_prod
+        extra_data: {fail_on_issues: true}
+
 awx_schedules:
   - name: Daily health check 02:00 UTC
     template: "10 Health check"

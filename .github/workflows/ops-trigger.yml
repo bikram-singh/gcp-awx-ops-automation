@@ -15,9 +15,11 @@ on:
           - "00 Connectivity check"
           - "10 Health check"
           - "21 Patch Linux DEV (dry run)"
+          - "30 Snapshot disks (pre-patch)"
           - "20 Patch Linux (rolling)"
+          - "50 Staged patching (dev, approve, prod)"
       limit:
-        description: "Hosts to target (all, env_dev, env_prod, role_web, patch_a ...)"
+        description: "Hosts to target (all, env_dev, env_prod, role_web, patch_a ...). Ignored by workflow 50, which sets its own"
         type: string
         default: env_dev
       extra_vars:
@@ -34,7 +36,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 75
     # Real patching needs a reviewer on the production environment; read-only templates do not.
-    environment: ${{ inputs.template == '20 Patch Linux (rolling)' && 'production' || '' }}
+    environment: ${{ (inputs.template == '20 Patch Linux (rolling)' || startsWith(inputs.template, '50 ')) && 'production' || '' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -61,5 +63,5 @@ jobs:
             echo "### AWX job"
             echo "- Template: \`${TEMPLATE}\`"
             echo "- Limit: \`${LIMIT}\`"
-            grep -E "finished with status" launch.txt | sed 's/^ *//' || true
+            grep -E "finished with status|started\." launch.txt | sed 's/^ *//' || true
           } >> "$GITHUB_STEP_SUMMARY"

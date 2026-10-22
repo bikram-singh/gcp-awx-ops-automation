@@ -1,0 +1,49 @@
+---
+# Takes a labelled snapshot of each target host's boot disk before a change (rollback point).
+# Runs from the AWX job pod against the Compute API using Workload Identity, so it needs no SSH to the hosts.
+# Extra vars (all optional):
+#   target_hosts       inventory pattern                          (default: all)
+#   gcp_project        project that owns the VMs                  (default: gcp-awx-ops)
+#   snapshot_prefix    snapshot name prefix                       (default: pre-patch)
+#   snapshot_location  storage location for the snapshot          (default: asia-south1)
+# Boot disks are named after their instance (Terraform default), and the inventory provides each host's zone.
+- name: Snapshot boot disks
+  hosts: "{{ target_hosts | default('all') }}"
+  gather_facts: false
+  vars:
+    gcp_project: gcp-awx-ops
+    snapshot_prefix: pre-patch
+    snapshot_location: asia-south1
+  tasks:
+    - name: Build the snapshot name
+      ansible.builtin.set_fact:
+        snapshot_name: "{{ snapshot_prefix }}-{{ inventory_hostname }}-{{ lookup('ansible.builtin.pipe', 'date -u +%Y%m%d-%H%M') }}"
+
+    - name: Create the snapshot
+      google.cloud.gcp_compute_snapshot:
+        name: "{{ snapshot_name }}"
+        source_disk:
+          name: "{{ inventory_hostname }}"
+        zone: "{{ zone }}"
+        storage_locations:
+          - "{{ snapshot_location }}"
+        labels:
+          created_by: awx
+          purpose: "{{ snapshot_prefix }}"
+          host: "{{ inventory_hostname }}"
+          awx_job: "{{ awx_job_id | default('manual') }}"
+        project: "{{ gcp_project }}"
+        auth_kind: application
+        state: present
+      delegate_to: localhost
+      register: snapshot
+
+    - name: Report
+      ansible.builtin.debug:
+        msg: "{{ inventory_hostname }}: snapshot {{ snapshot_name }} ({{ snapshot.status | default('n/a') }})"
+
+    - name: Publish the snapshot names as job artifacts
+      ansible.builtin.set_stats:
+        data:
+          snapshots: "{{ ansible_play_hosts | map('extract', hostvars, 'snapshot_name') | list }}"
+      run_once: true  # noqa: run-once[task]

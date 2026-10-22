@@ -90,8 +90,8 @@ Prerequisites: a GCP project with billing, `gcloud`, `terraform >= 1.6`, a GitHu
 - [x] Phase 1: Foundation (VPC, GKE, Cloud SQL, AWX)
 - [x] Phase 2: VM fleet with labels, GCE dynamic inventory, first playbooks (see [docs/PHASE2.md](docs/PHASE2.md))
 - [ ] Phase 3: Core roles (patching, CIS hardening, health check) + Molecule + custom EE
-- [ ] Phase 4 (code written, pending first run): AWX config-as-code + workflows that apply it and launch jobs (see [docs/PHASE4.md](docs/PHASE4.md))
-- [ ] Phase 5: Patching workflow (pre-check, snapshot, patch, verify, notify) with approval
+- [x] Phase 4: AWX config-as-code + workflows that apply it and launch jobs (see [docs/PHASE4.md](docs/PHASE4.md))
+- [ ] Phase 5 (code written, pending first run): Staged patching workflow (pre-check, snapshot, patch, verify, approval, prod) (see [docs/PHASE5.md](docs/PHASE5.md))
 - [ ] Phase 6: Self-healing (alert -> Pub/Sub -> webhook) and provisioning callback
 - [ ] Phase 7: RBAC, notifications, daily report, docs, demo, article
 

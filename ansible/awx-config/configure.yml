@@ -94,3 +94,43 @@
       loop: "{{ awx_schedules | default([]) }}"
       loop_control:
         label: "{{ item.name }}"
+
+    - name: Workflow job templates
+      awx.awx.workflow_job_template:
+        name: "{{ item.name }}"
+        description: "{{ item.description | default('') }}"
+        organization: "{{ awx_organization }}"
+        allow_simultaneous: false
+        state: present
+      loop: "{{ awx_workflows | default([]) }}"
+      loop_control:
+        label: "{{ item.name }}"
+
+    # Pass 1: create every node (job template node or approval node).
+    - name: Workflow nodes
+      awx.awx.workflow_job_template_node:
+        identifier: "{{ item.1.id }}"
+        workflow_job_template: "{{ item.0.name }}"
+        organization: "{{ awx_organization }}"
+        unified_job_template: "{{ item.1.template | default(omit) }}"
+        lookup_organization: "{{ awx_organization if item.1.template is defined else omit }}"
+        approval_node: "{{ item.1.approval | default(omit) }}"
+        limit: "{{ item.1.limit | default(omit) }}"
+        extra_data: "{{ item.1.extra_data | default(omit) }}"
+        state: present
+      loop: "{{ awx_workflows | default([]) | subelements('nodes') }}"
+      loop_control:
+        label: "{{ item.0.name }} / {{ item.1.id }}"
+
+    # Pass 2: link the nodes, now that all of them exist.
+    - name: Workflow links (run on success)
+      awx.awx.workflow_job_template_node:
+        identifier: "{{ item.1.id }}"
+        workflow_job_template: "{{ item.0.name }}"
+        organization: "{{ awx_organization }}"
+        success_nodes: "{{ item.1.success }}"
+        state: present
+      loop: "{{ awx_workflows | default([]) | subelements('nodes') }}"
+      loop_control:
+        label: "{{ item.0.name }} / {{ item.1.id }} -> {{ item.1.success | default([]) | join(', ') }}"
+      when: item.1.success is defined

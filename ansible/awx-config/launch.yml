@@ -1,13 +1,18 @@
 ---
-# Launches an AWX job template and waits for it to finish. Used by the ops-trigger workflow.
-# Variables: template (required), limit (optional), launch_extra_vars (optional JSON string).
-- name: Launch an AWX job template
+# Launches an AWX job template or workflow. Used by the ops-trigger workflow.
+# Variables: template (required), limit (optional, job templates only), launch_extra_vars (optional JSON string).
+# Job templates are waited for. Workflows contain a human approval step, so they are started and left running:
+# approve them in AWX under Views, Workflow Approvals.
+- name: Launch an AWX job template or workflow
   hosts: localhost
   connection: local
   gather_facts: false
+  vars_files:
+    - awx_config.yml
   vars:
     limit: ""
     launch_extra_vars: "{}"
+    workflow_names: "{{ awx_workflows | default([]) | map(attribute='name') | list }}"
   tasks:
     - name: Require a template name
       ansible.builtin.assert:
@@ -19,7 +24,7 @@
         fail_msg: Pass the full job template name, for example "10 Health check"
         quiet: true
 
-    - name: Launch and wait
+    - name: Launch the job template and wait
       awx.awx.job_launch:
         job_template: "{{ template }}"
         limit: "{{ limit | default(omit, true) }}"
@@ -27,7 +32,21 @@
         wait: true
         timeout: 3600
       register: job
+      when: template not in workflow_names
+
+    - name: Launch the workflow (not waiting, it needs an approval)
+      awx.awx.workflow_launch:
+        name: "{{ template }}"
+        extra_vars: "{{ launch_extra_vars | from_json }}"
+        wait: false
+      register: workflow
+      when: template in workflow_names
 
     - name: Result
       ansible.builtin.debug:
-        msg: "Job {{ job.id }} ({{ template }}) finished with status {{ job.status }}"
+        msg: >-
+          {{
+            ('Job ' ~ job.id ~ ' (' ~ template ~ ') finished with status ' ~ job.status)
+            if job is not skipped else
+            ('Workflow job ' ~ workflow.id ~ ' (' ~ template ~ ') started. Approve the prod step in AWX: Views, Workflow Approvals')
+          }}
