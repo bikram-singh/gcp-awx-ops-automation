@@ -25,7 +25,11 @@ AWX --(IAP / SSH)--> managed VM fleet (labelled web/app/db, dev/prod)
 Cloud Monitoring alert -> Pub/Sub -> Cloud Function -> AWX webhook
 ```
 
-Full design: [docs/HLD.md](docs/HLD.md)
+Full design: [docs/HLD.md](docs/HLD.md) and diagrams in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+
+![Platform](docs/img/platform.png)
+
+More: [Demo script](docs/DEMO.md) | [Teardown](docs/TEARDOWN.md) | [Medium article draft](docs/ARTICLE.md)
 
 ## Repo layout
 
@@ -93,10 +97,10 @@ Prerequisites: a GCP project with billing, `gcloud`, `terraform >= 1.6`, a GitHu
 - [x] Phase 4: AWX config-as-code + workflows that apply it and launch jobs (see [docs/PHASE4.md](docs/PHASE4.md))
 - [x] Phase 5: Staged patching workflow (pre-check, snapshot, patch, verify, approval, prod) (see [docs/PHASE5.md](docs/PHASE5.md))
 - [x] Phase 6a: Self-healing, a stopped VM is started again by AWX (see [docs/PHASE6.md](docs/PHASE6.md))
-- [ ] Phase 6b: Provisioning callback (new VMs configure themselves on boot)
-- [ ] Phase 7a (code written, pending first run): RBAC with separate look, operate and approve duties, plus a daily health report (see [docs/PHASE7.md](docs/PHASE7.md))
-- [ ] Phase 7b: AWX notifications (failures and approvals)
-- [ ] Phase 7c: diagrams, demo script, Medium article
+- [ ] Phase 6b (optional): Provisioning callback (new VMs configure themselves on boot)
+- [x] Phase 7a: RBAC with separate look, operate and approve duties, plus a daily health report (see [docs/PHASE7.md](docs/PHASE7.md))
+- [ ] Phase 7b (optional): AWX notifications (CI failures already email via GitHub)
+- [x] Phase 7c: diagrams, demo script, teardown guide, Medium article draft (see below)
 
 ## Cost note
 
