@@ -47,6 +47,10 @@ Audit log --> Pub/Sub --> in-cluster bridge --> AWX (heal a stopped VM, onboard 
 
 Full design: [docs/HLD.md](docs/HLD.md) and diagrams in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 
+![Architecture with Google Cloud icons](docs/architecture/architecture-gcp.svg)
+
+Vector version: [docs/architecture/architecture-gcp.svg](docs/architecture/architecture-gcp.svg) (PNG: [architecture-gcp.png](docs/architecture/architecture-gcp.png)).
+
 ![Platform](docs/img/platform.png)
 
 More: [Demo script](docs/DEMO.md) | [Teardown](docs/TEARDOWN.md) | [Medium article draft](docs/ARTICLE.md) | [Snapshots](docs/SNAPSHOTS.md)

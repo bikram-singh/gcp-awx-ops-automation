@@ -2,6 +2,12 @@
 
 GitHub renders the diagrams below. PNG copies for slides and the article are in [docs/img](img): `platform`, `pipeline`, `patching`, `selfheal`, `onboard`, `rbac`.
 
+## 0. Overview with Google Cloud icons
+
+![Architecture](architecture/architecture-gcp.svg)
+
+SVG for editing and slides: [architecture-gcp.svg](architecture/architecture-gcp.svg). PNG: [architecture-gcp.png](architecture/architecture-gcp.png). Google Cloud icons are the official, unmodified Google icons.
+
 ## 1. The platform
 
 Everything is private by default. AWX runs inside a private GKE cluster, reaches its database over a private IP, and manages VMs that have no public address. GitHub deploys with short-lived tokens, so there are no stored keys. The dotted lines are optional: an HTTPS entry for people (allowlisted addresses only) and chat alerts.
