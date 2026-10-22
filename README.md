@@ -11,18 +11,19 @@ Servers are easy to build and hard to operate. This project builds the platform 
 | Provision | Terraform | VPC, private GKE, Cloud SQL, AWX install, VM fleet |
 | Deliver | GitHub Actions | Plan/apply with keyless auth (OIDC), lint and test playbooks, sync AWX config |
 | Operate | AWX | Job templates, workflows, schedules, RBAC, credentials, notifications |
-| Event | Cloud Monitoring, Pub/Sub, Cloud Function | Alert triggers AWX webhook for self-healing |
+| Event | Audit log, Pub/Sub, in-cluster bridge | A VM stopped is started again; a new VM configures itself |
+| Quality | ansible-lint, Molecule, ansible-builder | Every change is linted and tested; jobs run in a custom execution environment |
 
 ## Architecture (summary)
 
 ```
 GitHub Repo --> GitHub Actions --(OIDC)--> GCP
-                 |- terraform plan/apply (platform, awx)
-                 |- ansible-lint / molecule
+                 |- terraform plan/apply (platform, awx, fleet, selfheal, ingress)
+                 |- ansible-lint / molecule, execution-environment build
                  `- AWX config-as-code sync + job trigger
 GKE (private) : AWX Operator -> AWX  --> Cloud SQL (PostgreSQL, private IP)
 AWX --(IAP / SSH)--> managed VM fleet (labelled web/app/db, dev/prod)
-Cloud Monitoring alert -> Pub/Sub -> Cloud Function -> AWX webhook
+Audit log --> Pub/Sub --> in-cluster bridge --> AWX (heal a stopped VM, onboard a new VM)
 ```
 
 Full design: [docs/HLD.md](docs/HLD.md) and diagrams in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
@@ -102,11 +103,24 @@ Prerequisites: a GCP project with billing, `gcloud`, `terraform >= 1.6`, a GitHu
 - [x] Phase 6b: Provisioning callback, new VMs configure themselves (see [docs/PHASE8.md](docs/PHASE8.md))
 - [x] Phase 7a: RBAC with separate look, operate and approve duties, plus a daily health report (see [docs/PHASE7.md](docs/PHASE7.md))
 - [x] Phase 7b: AWX notifications to a chat webhook (see [docs/PHASE8.md](docs/PHASE8.md))
-- [x] Phase 7c: diagrams, demo script, teardown guide, Medium article draft (see below)
+- [x] Phase 7c: diagrams, demo script, teardown guide, Medium article draft (see Documents)
+- [x] Phase 9 (optional): HTTPS entry to AWX with a Google-managed certificate and a Cloud Armor allowlist (see [docs/INGRESS.md](docs/INGRESS.md))
+
+## Documents
+
+| Document | What it is |
+|---|---|
+| [docs/HLD.md](docs/HLD.md) | High-level design, decisions, security, risks |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Diagrams: platform, pipelines, patching, self-healing, onboarding, RBAC |
+| [docs/PHASE2.md](docs/PHASE2.md) to [PHASE8.md](docs/PHASE8.md) | What each phase built and how to run it |
+| [docs/INGRESS.md](docs/INGRESS.md) | Optional HTTPS entry |
+| [docs/DEMO.md](docs/DEMO.md) | 10-minute demo script and interview talking points |
+| [docs/TEARDOWN.md](docs/TEARDOWN.md) | Destroy everything in the right order |
+| [docs/ARTICLE.md](docs/ARTICLE.md) | Medium article draft |
 
 ## Cost note
 
-GKE nodes and Cloud SQL are the main cost. Use `terraform destroy` (awx stack first, then platform) when you are not working. Set `gke_node_count = 1` and a small machine type for the lab.
+GKE nodes and Cloud SQL are the main cost. Use `terraform destroy` when you are not working, in the order given in [docs/TEARDOWN.md](docs/TEARDOWN.md). Set `gke_node_count = 1` and a small machine type for the lab.
 
 ## Known limitations (lab vs production)
 
