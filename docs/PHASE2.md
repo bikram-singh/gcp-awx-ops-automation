@@ -1,6 +1,8 @@
-# Phase 2: VM fleet, dynamic inventory and first playbooks
+# 📘 Phase 2: VM fleet, dynamic inventory and first playbooks
 
-## What this phase adds
+> 🏠 [README](../README.md) · 🏛️ [HLD](HLD.md) · 🗺️ [Architecture](ARCHITECTURE.md) · 🎬 [Demo](DEMO.md) · 💥 [Teardown](TEARDOWN.md) · 📸 [Snapshots](SNAPSHOTS.md)
+
+## ✨ What this phase adds
 
 | Piece | Where | What it does |
 |---|---|---|
@@ -10,7 +12,7 @@
 
 Inventory groups produced from labels: `env_dev`, `env_prod`, `role_web`, `role_app`, `role_db`, `patch_a`, `patch_b`.
 
-## 1. Create the SSH key pair (once, on your laptop)
+## 🔹 1. Create the SSH key pair (once, on your laptop)
 
 ```powershell
 ssh-keygen -t ed25519 -f $env:USERPROFILE\.ssh\awx_fleet -C ansible@awx -N '""'
@@ -19,7 +21,7 @@ Get-Content $env:USERPROFILE\.ssh\awx_fleet.pub
 
 The `.pub` file goes to Terraform and is not secret. The private key (`awx_fleet`, no extension) goes only into AWX.
 
-## 2. Deploy the fleet
+## 🖥️ 2. Deploy the fleet
 
 Add a GitHub repository **variable** `SSH_PUBLIC_KEY` with the full contents of the `.pub` line (Settings, Secrets and variables, Actions, Variables). Then push to `main`. The `fleet` job runs after `platform` and `awx` and waits for your approval. Or apply locally:
 
@@ -36,7 +38,7 @@ Check the result:
 gcloud compute instances list --project gcp-awx-ops --format="table(name,zone.basename(),networkInterfaces[0].networkIP,labels)"
 ```
 
-## 3. Inventory access without keys (Workload Identity)
+## 🗂️ 3. Inventory access without keys (Workload Identity)
 
 Your organization blocks service account keys (`iam.managed.disableServiceAccountKeyCreation`), so the inventory sync uses Workload Identity instead. Nothing to create by hand:
 
@@ -50,7 +52,7 @@ kubectl -n awx annotate serviceaccount awx iam.gke.io/gcp-service-account=awx-in
 kubectl -n awx rollout restart deployment awx-task
 ```
 
-## 4. Configure AWX (UI)
+## ⚙️ 4. Configure AWX (UI)
 
 Open AWX at http://localhost:8080 (`kubectl -n awx port-forward svc/awx-service 8080:80`).
 
@@ -71,7 +73,7 @@ Open AWX at http://localhost:8080 (`kubectl -n awx port-forward svc/awx-service 
    | `10 Health check` | `ansible/playbooks/health_check.yml` |
    | `20 Patch Linux (rolling)` | `ansible/playbooks/patch_linux.yml` |
 
-## 5. Run order
+## 🔹 5. Run order
 
 1. `00 Connectivity check` with limit `all`. All 6 hosts should be OK. If the SSH step fails, see Troubleshooting.
 2. `10 Health check`. Open the job output and the **Artifacts** section for `health_report`.
@@ -79,7 +81,7 @@ Open AWX at http://localhost:8080 (`kubectl -n awx port-forward svc/awx-service 
 
 Useful extra vars: `{"patch_batch_size": 1, "patch_max_fail_percent": 0, "patch_reboot": "auto"}` patches one host at a time and stops on the first failure.
 
-## Troubleshooting
+## 🔧 Troubleshooting
 
 | Symptom | Likely cause |
 |---|---|
@@ -90,7 +92,7 @@ Useful extra vars: `{"patch_batch_size": 1, "patch_max_fail_percent": 0, "patch_
 | SSH permission denied | Wrong private key in `fleet-ssh`, or `ssh_public_key` in Terraform was different. Re-apply with the right key and reboot or `sudo google_metadata_script_runner startup` |
 | Project sync fails on collections | Galaxy not reachable from the cluster; check Cloud NAT is up |
 
-## Costs
+## 💰 Costs
 
 Six `e2-small` VMs cost roughly as much as one extra small node. When you are not working, destroy the `fleet` stack (it is cheap to recreate):
 
@@ -98,3 +100,11 @@ Six `e2-small` VMs cost roughly as much as one extra small node. When you are no
 cd terraform\fleet
 terraform destroy
 ```
+
+---
+
+<div align="center">
+
+**Maintained by Bikram Singh** · [⬆ Back to README](../README.md)
+
+</div>

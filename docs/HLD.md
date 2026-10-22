@@ -1,4 +1,6 @@
-# High-Level Design: Day-2 Operations Automation Platform on GCP
+# 🏛️ High-Level Design: Day-2 Operations Automation Platform on GCP
+
+> 🏠 [README](../README.md) · 🏛️ [HLD](HLD.md) · 🗺️ [Architecture](ARCHITECTURE.md) · 🎬 [Demo](DEMO.md) · 💥 [Teardown](TEARDOWN.md) · 📸 [Snapshots](SNAPSHOTS.md)
 
 | | |
 |---|---|
@@ -8,7 +10,7 @@
 
 Diagrams: [ARCHITECTURE.md](ARCHITECTURE.md). Per-phase detail: PHASE2 to PHASE8, INGRESS. Demo: [DEMO.md](DEMO.md). Teardown: [TEARDOWN.md](TEARDOWN.md).
 
-## 1. Problem statement
+## 🎯 1. Problem statement
 
 Infrastructure teams build servers with IaC but still run daily operations by hand: patching, hardening, access, health checks, incident fixes. This causes:
 
@@ -18,7 +20,7 @@ Infrastructure teams build servers with IaC but still run daily operations by ha
 - shared credentials passed around between engineers
 - slow response to common incidents (a VM stopped, a new VM nobody configured)
 
-## 2. Goals and non-goals
+## ✅ 2. Goals and non-goals
 
 **Goals**
 
@@ -35,7 +37,7 @@ Infrastructure teams build servers with IaC but still run daily operations by ha
 - Multi-region HA of AWX (single region, single replica in the lab).
 - Windows fleet management.
 
-## 3. Logical architecture
+## 🏗️ 3. Logical architecture
 
 See the platform diagram in [ARCHITECTURE.md](ARCHITECTURE.md) (`img/platform.png`). In short:
 
@@ -45,7 +47,7 @@ See the platform diagram in [ARCHITECTURE.md](ARCHITECTURE.md) (`img/platform.pn
 - **Event path:** the Admin Activity audit log feeds two log sinks (VM stopped, VM created) into one Pub/Sub topic. A small bridge in the cluster pulls events and launches the matching AWX template.
 - **Optional HTTPS entry:** a global load balancer with a Google-managed certificate and a Cloud Armor allowlist, for people only. Pipelines keep using the private tunnel.
 
-## 4. Components
+## 🧩 4. Components
 
 | Component | Purpose | Notes |
 |---|---|---|
@@ -60,7 +62,7 @@ See the platform diagram in [ARCHITECTURE.md](ARCHITECTURE.md) (`img/platform.pn
 | Roles | `roles/cis`: CIS-aligned hardening, tested with Molecule | |
 | GitHub Actions | `infra`, `awx-config`, `ops-trigger`, `daily-report`, `lint`, `ee-build` | |
 
-## 5. Key design decisions
+## 🧠 5. Key design decisions
 
 | Decision | Choice | Reason |
 |---|---|---|
@@ -76,7 +78,7 @@ See the platform diagram in [ARCHITECTURE.md](ARCHITECTURE.md) (`img/platform.pn
 | IAM scoping | Conditional bindings by VM name | AWX can start and snapshot only fleet VMs, never GKE nodes |
 | Public entry | Optional, allowlist mandatory, HTTPS only | An admin tool should not be open to the internet |
 
-## 6. Security design
+## 🔒 6. Security design
 
 - **Identity:** GitHub to GCP with OIDC, restricted to this repository by an attribute condition. Pods use Workload Identity. No JSON keys anywhere.
 - **Least privilege:** separate service accounts for the deployer, GKE nodes, the fleet, inventory and snapshots, and the bridge. Conditional IAM limits start and snapshot rights to named VMs.
@@ -86,7 +88,7 @@ See the platform diagram in [ARCHITECTURE.md](ARCHITECTURE.md) (`img/platform.pn
 - **Hardening:** `roles/cis` applies SSH, kernel network, filesystem and permission baselines, validated with `sshd -t` before install.
 - **Audit:** AWX job history and activity stream, Cloud Audit Logs, GitHub Actions run history.
 
-## 7. Operational use cases
+## 🛠️ 7. Operational use cases
 
 | Use case | Status |
 |---|---|
@@ -100,7 +102,7 @@ See the platform diagram in [ARCHITECTURE.md](ARCHITECTURE.md) (`img/platform.pn
 | Role-based access (look, operate, approve) | Done |
 | Scheduled stop/start of dev VMs, certificate expiry checks, application deployment | Not built |
 
-## 8. Delivery pipelines
+## 🚚 8. Delivery pipelines
 
 | Workflow | Trigger | Steps |
 |---|---|---|
@@ -111,7 +113,7 @@ See the platform diagram in [ARCHITECTURE.md](ARCHITECTURE.md) (`img/platform.pn
 | `ops-trigger` | manual | launch a template or workflow and wait; real patching and hardening need a production reviewer |
 | `daily-report` | schedule or manual | run the health report and publish a summary table |
 
-## 9. Failure handling and resilience
+## 🛡️ 9. Failure handling and resilience
 
 - Rolling updates with `serial` and `max_fail_percentage`; hardening runs one host at a time and stops on the first failure.
 - Snapshot before patching; the staged workflow stops before production if dev fails or the approval is denied.
@@ -119,11 +121,11 @@ See the platform diagram in [ARCHITECTURE.md](ARCHITECTURE.md) (`img/platform.pn
 - The bridge acknowledges an event only after AWX accepts the launch; server errors are retried, bad events are skipped.
 - The whole platform can be rebuilt from Git: `infra`, then `awx-config`.
 
-## 10. Cost considerations
+## 💰 10. Cost considerations
 
 Main costs are GKE nodes, Cloud SQL and the VM fleet. The optional HTTPS entry adds roughly $18 to $25 a month, billed hourly. Mitigations: small machine types, the optional parts off by default, and a documented four-to-five step teardown ([TEARDOWN.md](TEARDOWN.md)).
 
-## 11. Risks and open items
+## ⚠️ 11. Risks and open items
 
 | Risk | Mitigation |
 |---|---|
@@ -134,7 +136,7 @@ Main costs are GKE nodes, Cloud SQL and the VM fleet. The optional HTTPS entry a
 | Hardening changes SSH settings | Dry-run template first; connectivity check after; one host at a time |
 | Webhook message format varies by chat tool | Bodies are configurable in `awx_config.yml` |
 
-## 12. Phases
+## 🗺️ 12. Phases
 
 | Phase | Content | Status |
 |---|---|---|
@@ -147,3 +149,11 @@ Main costs are GKE nodes, Cloud SQL and the VM fleet. The optional HTTPS entry a
 | 7 | RBAC, daily report, notifications (7b), diagrams and article (7c) | Done |
 | 8 | 6b and 7b implementation | Done |
 | 9 | Optional HTTPS entry | Done, off by default |
+
+---
+
+<div align="center">
+
+**Maintained by Bikram Singh** · [⬆ Back to README](../README.md)
+
+</div>

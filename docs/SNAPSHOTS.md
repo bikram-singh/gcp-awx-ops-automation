@@ -1,10 +1,12 @@
-# Snapshots
+# 📸 Snapshots
+
+> 🏠 [README](../README.md) · 🏛️ [HLD](HLD.md) · 🗺️ [Architecture](ARCHITECTURE.md) · 🎬 [Demo](DEMO.md) · 💥 [Teardown](TEARDOWN.md) · 📸 [Snapshots](SNAPSHOTS.md)
 
 Snapshots captured during the live run of the platform (project `gcp-awx-ops`, region `asia-south1`). Grouped by phase. The main [README](../README.md) shows the highlights.
 
 Secrets in the original snapshots (an admin password, a private key, an IP address, a webhook URL) were removed or masked before publishing.
 
-## Phase 1: Platform foundation
+## 🔹 Phase 1: Platform foundation
 
 Folder: `docs/snapshots/01-platform/`
 
@@ -60,7 +62,7 @@ Folder: `docs/snapshots/01-platform/`
 
 ![gcloud: identity pool, secrets and state files](snapshots/01-platform/13-cli-wif-secrets-state.png)
 
-## Phase 2: AWX credential, project and inventory
+## 🗂️ Phase 2: AWX credential, project and inventory
 
 Folder: `docs/snapshots/02-awx-setup/`
 
@@ -104,7 +106,7 @@ Folder: `docs/snapshots/02-awx-setup/`
 
 ![Six imported hosts](snapshots/02-awx-setup/10-inventory-hosts.png)
 
-## Phase 2: first job templates
+## 🔹 Phase 2: first job templates
 
 Folder: `docs/snapshots/03-first-playbooks/`
 
@@ -164,7 +166,7 @@ Folder: `docs/snapshots/03-first-playbooks/`
 
 ![Rolling patch with reboot and post-check](snapshots/03-first-playbooks/14-job-20-output.png)
 
-## Phases 4 and 5: ops-trigger and the staged patching workflow
+## 🗺️ Phases 4 and 5: ops-trigger and the staged patching workflow
 
 Folder: `docs/snapshots/04-ops-trigger-and-patching/`
 
@@ -224,7 +226,7 @@ Folder: `docs/snapshots/04-ops-trigger-and-patching/`
 
 ![Dev and prod snapshots taken before patching](snapshots/04-ops-trigger-and-patching/14-gcp-snapshots-all.png)
 
-## Phases 6 and 8: self-healing and provisioning callback
+## 🗺️ Phases 6 and 8: self-healing and provisioning callback
 
 Folder: `docs/snapshots/05-self-healing-and-onboarding/`
 
@@ -252,7 +254,7 @@ Folder: `docs/snapshots/05-self-healing-and-onboarding/`
 
 ![Onboarding job started by the audit-log event](snapshots/05-self-healing-and-onboarding/06-job-45-onboard-output.png)
 
-## Phase 3a: lint, Molecule and CIS hardening
+## 🛡️ Phase 3a: lint, Molecule and CIS hardening
 
 Folder: `docs/snapshots/06-hardening-and-lint/`
 
@@ -320,7 +322,7 @@ Folder: `docs/snapshots/06-hardening-and-lint/`
 
 ![Second run: changed=0 on every host (idempotent)](snapshots/06-hardening-and-lint/16-job-189-idempotent.png)
 
-## Phase 3b: custom execution environment
+## 📦 Phase 3b: custom execution environment
 
 Folder: `docs/snapshots/07-execution-environment/`
 
@@ -340,7 +342,7 @@ Folder: `docs/snapshots/07-execution-environment/`
 
 ![awx-config: allow a limit on template 05](snapshots/07-execution-environment/04-awx-config-allow-limit-05.png)
 
-## Phase 9: optional HTTPS entry
+## 🔹 Phase 9: optional HTTPS entry
 
 Folder: `docs/snapshots/08-https-ingress/`
 
@@ -368,7 +370,7 @@ Folder: `docs/snapshots/08-https-ingress/`
 
 ![AWX dashboard at https://awx.gcpcloudhub.in](snapshots/08-https-ingress/06-awx-dashboard-https.png)
 
-## Phase 8: notifications (7b)
+## 🔔 Phase 8: notifications (7b)
 
 Folder: `docs/snapshots/09-notifications/`
 
@@ -399,3 +401,11 @@ Folder: `docs/snapshots/09-notifications/`
 **Discord: failed and succeeded alerts with real AWX links**
 
 ![Discord: failed and succeeded alerts with real AWX links](snapshots/09-notifications/07-discord-failed-and-success-alerts.png)
+
+---
+
+<div align="center">
+
+**Maintained by Bikram Singh** · [⬆ Back to README](../README.md)
+
+</div>

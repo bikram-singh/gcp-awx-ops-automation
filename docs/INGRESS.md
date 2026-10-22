@@ -1,4 +1,6 @@
-# Optional: HTTPS entry to AWX
+# 🌐 Optional: HTTPS entry to AWX
+
+> 🏠 [README](../README.md) · 🏛️ [HLD](HLD.md) · 🗺️ [Architecture](ARCHITECTURE.md) · 🎬 [Demo](DEMO.md) · 💥 [Teardown](TEARDOWN.md) · 📸 [Snapshots](SNAPSHOTS.md)
 
 By default AWX is private and you reach it with `kubectl port-forward`. This optional stack (`terraform/ingress`) adds a public HTTPS address for people, without changing how GitHub Actions connects (it keeps using the private tunnel).
 
@@ -7,17 +9,17 @@ browser --HTTPS--> global load balancer (Google-managed certificate, Cloud Armor
         --> network endpoint group --> AWX web pods
 ```
 
-## Safety rules built in
+## 🛡️ Safety rules built in
 
 - **Off by default.** Nothing is created until both `AWX_DOMAIN` and `AWX_ALLOWED_CIDRS` are set.
 - **Allowlist is mandatory.** A domain without allowed addresses is refused, and `0.0.0.0/0` is refused. Cloud Armor returns 403 to everyone else.
 - **HTTPS only.** Plain HTTP is not served. The certificate is issued and renewed by Google.
 
-## Cost
+## 💰 Cost
 
 About $18 a month for the load balancer forwarding rule plus about $5 for the Cloud Armor policy, billed per hour. A few days costs well under a dollar or two. Remove it with the teardown steps when you are done.
 
-## Turn it on
+## 🟢 Turn it on
 
 1. Find your public address: `curl ifconfig.me` (use `/32`). Add more ranges for other locations.
 2. GitHub, Settings, Secrets and variables, Actions, **Variables**:
@@ -34,7 +36,7 @@ About $18 a month for the load balancer forwarding rule plus about $5 for the Cl
 
 7. Open `https://<your domain>` from an allowed address and log in as `admin`.
 
-## If something is off
+## 🔧 If something is off
 
 | Symptom | Cause and fix |
 |---|---|
@@ -44,10 +46,18 @@ About $18 a month for the load balancer forwarding rule plus about $5 for the Cl
 | Login page loads but login fails with "CSRF" or 403 | AWX sits behind a proxy that ends TLS. Add to the AWX custom resource `extra_settings`: `CSRF_TRUSTED_ORIGINS` containing `https://<your domain>`, and tell me; I will add it to the awx stack. |
 | Job output stops streaming | A long-lived connection was cut. The backend timeout is already 3600 s; check that nothing else sits in front. |
 
-## Turn it off
+## 🔴 Turn it off
 
 Clear `AWX_DOMAIN` and run infra again, or destroy the `ingress` stack (first in docs/TEARDOWN.md). AWX itself is untouched.
 
-## Not tested here
+## 🧪 Not tested here
 
 The stack formats cleanly, but it could not be validated or planned in the build environment (no access to the Terraform provider registry, no cluster). The first real plan is the `infra` run in step 3, and the AWX behavior behind the proxy (CSRF row above) is untested.
+
+---
+
+<div align="center">
+
+**Maintained by Bikram Singh** · [⬆ Back to README](../README.md)
+
+</div>

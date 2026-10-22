@@ -1,14 +1,16 @@
-# Architecture diagrams
+# 🗺️ Architecture diagrams
+
+> 🏠 [README](../README.md) · 🏛️ [HLD](HLD.md) · 🗺️ [Architecture](ARCHITECTURE.md) · 🎬 [Demo](DEMO.md) · 💥 [Teardown](TEARDOWN.md) · 📸 [Snapshots](SNAPSHOTS.md)
 
 GitHub renders the diagrams below. PNG copies for slides and the article are in [docs/img](img): `platform`, `pipeline`, `patching`, `selfheal`, `onboard`, `rbac`.
 
-## 0. Overview with Google Cloud icons
+## 🔹 0. Overview with Google Cloud icons
 
 ![Architecture](architecture/architecture-gcp.svg)
 
 SVG for editing and slides: [architecture-gcp.svg](architecture/architecture-gcp.svg). PNG: [architecture-gcp.png](architecture/architecture-gcp.png). Google Cloud icons are the official, unmodified Google icons.
 
-## 1. The platform
+## 🔹 1. The platform
 
 Everything is private by default. AWX runs inside a private GKE cluster, reaches its database over a private IP, and manages VMs that have no public address. GitHub deploys with short-lived tokens, so there are no stored keys. The dotted lines are optional: an HTTPS entry for people (allowlisted addresses only) and chat alerts.
 
@@ -45,7 +47,7 @@ flowchart TB
   awx -. "failure, success and approval alerts" .-> chat["Chat webhook"]
 ```
 
-## 2. From a commit to a running system
+## 🔹 2. From a commit to a running system
 
 Infrastructure, AWX configuration, code quality and the execution-environment image are separate pipelines, so changing a template never touches the cluster.
 
@@ -67,7 +69,7 @@ flowchart TD
   tunnel2 --> job["launch template, wait for the result"]
 ```
 
-## 3. Staged patching workflow
+## 🩹 3. Staged patching workflow
 
 Nothing reaches production until dev has been snapshotted, patched, verified, and a person has approved.
 
@@ -85,7 +87,7 @@ flowchart LR
   vp --> done(["Done"])
 ```
 
-## 4. Self-healing
+## 🩺 4. Self-healing
 
 A VM is stopped. About a minute later AWX has started it again, with nobody involved.
 
@@ -109,7 +111,7 @@ sequenceDiagram
   B->>P: acknowledge
 ```
 
-## 5. Who can do what
+## ✨ 5. Who can do what
 
 ```mermaid
 %%{init: {'theme': 'neutral'}}%%
@@ -120,7 +122,7 @@ flowchart LR
   admin["admin"] -. "not used day to day" .-> org
 ```
 
-## 6. A new VM configures itself
+## ⚙️ 6. A new VM configures itself
 
 The same audit-log path that heals a stopped VM also configures a new one. No load balancer and no extra cost.
 
@@ -145,3 +147,11 @@ sequenceDiagram
   A->>V: baseline, connectivity and health check
   B->>P: acknowledge
 ```
+
+---
+
+<div align="center">
+
+**Maintained by Bikram Singh** · [⬆ Back to README](../README.md)
+
+</div>

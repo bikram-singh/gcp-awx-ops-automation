@@ -1,6 +1,8 @@
-# Phase 5: Staged patching workflow with snapshots and approval
+# 📘 Phase 5: Staged patching workflow with snapshots and approval
 
-## What this phase adds
+> 🏠 [README](../README.md) · 🏛️ [HLD](HLD.md) · 🗺️ [Architecture](ARCHITECTURE.md) · 🎬 [Demo](DEMO.md) · 💥 [Teardown](TEARDOWN.md) · 📸 [Snapshots](SNAPSHOTS.md)
+
+## ✨ What this phase adds
 
 | Piece | Where | What it does |
 |---|---|---|
@@ -10,7 +12,7 @@
 | Workflow `50 Staged patching (dev, approve, prod)` | same file | Chains the templates with a human approval before prod |
 | Launcher support | `launch.yml`, `ops-trigger.yml` | `ops-trigger` can start template 30 and workflow 50 |
 
-## The workflow
+## 🔹 The workflow
 
 ```
 precheck (health, all)
@@ -24,13 +26,13 @@ precheck (health, all)
 - **The approval** waits up to 24 hours (`timeout: 86400`). Denying it ends the workflow.
 - Everything is defined in `awx_config.yml`, so the `awx-config` workflow builds it in AWX.
 
-## Deploy
+## 🔹 Deploy
 
 1. **Permission first.** Push the Terraform change. The `infra` pipeline runs `platform`, `awx` and `fleet`, and each stage waits for your approval in the `production` environment. Only `fleet` has a change (the new IAM binding). Approve all three.
 2. **AWX config.** The same push changes `ansible/awx-config/`, so the `awx-config` workflow also runs. Wait for `infra` to finish first if you want to be safe, or rerun `awx-config` from the Actions tab afterwards.
 3. In AWX you should now see template `30 Snapshot disks (pre-patch)` and, under Templates, the workflow `50 Staged patching (dev, approve, prod)`. Open the workflow and its **Visualizer** tab to see the graph. Take a screenshot.
 
-## Test, in this order
+## 🧪 Test, in this order
 
 1. **Snapshots alone.** Run `ops-trigger` with template `30 Snapshot disks (pre-patch)`, limit `env_dev`. Then check Compute Engine, Storage, Snapshots: you should see `pre-patch-<host>-<date>` for each dev VM. Screenshot it.
 2. **The whole workflow.** Run `ops-trigger` with template `50 Staged patching (dev, approve, prod)`. GitHub asks a reviewer to approve the `production` environment first, because this workflow can patch prod. Or launch it directly in AWX (Templates, rocket icon).
@@ -39,7 +41,7 @@ precheck (health, all)
 
 To rehearse safely, deny the approval once. The workflow ends after dev and nothing in prod changes.
 
-## Roll back from a snapshot
+## 📸 Roll back from a snapshot
 
 ```powershell
 gcloud compute snapshots list --project gcp-awx-ops --filter="labels.purpose=pre-patch"
@@ -47,7 +49,7 @@ gcloud compute snapshots list --project gcp-awx-ops --filter="labels.purpose=pre
 gcloud compute disks create web-dev-01-restore --source-snapshot=<snapshot-name> --zone=asia-south1-a --project gcp-awx-ops
 ```
 
-## Troubleshooting
+## 🔧 Troubleshooting
 
 | Symptom | Likely cause |
 |---|---|
@@ -57,8 +59,16 @@ gcloud compute disks create web-dev-01-restore --source-snapshot=<snapshot-name>
 | Verify stage fails on the first run | The health check found a real warning (memory, disk, failed unit). Read the job output, fix it, and rerun |
 | Workflow stops at the approval and nobody notices | Expected. Notifications for approvals arrive in Phase 7 |
 
-## Notes and trade-offs
+## 🔧 Notes and trade-offs
 
 - **Snapshot permission is broad for a lab.** `compute.storageAdmin` also covers disks and images in the project. A custom role limited to the snapshot permissions is the production choice.
 - **No automatic snapshot clean-up yet.** Snapshots keep costing a little. Delete old ones with `gcloud compute snapshots delete`, or add a retention job later.
 - **Not run end to end yet.** The code passed `ansible-lint` at the production profile with the real module definitions, but the first run in your environment is the real test. Send me the log if a step fails.
+
+---
+
+<div align="center">
+
+**Maintained by Bikram Singh** · [⬆ Back to README](../README.md)
+
+</div>

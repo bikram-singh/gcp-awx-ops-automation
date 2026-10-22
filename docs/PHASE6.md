@@ -1,6 +1,8 @@
-# Phase 6a: Self-healing, a stopped VM is started again by AWX
+# 📘 Phase 6a: Self-healing, a stopped VM is started again by AWX
 
-## What it does
+> 🏠 [README](../README.md) · 🏛️ [HLD](HLD.md) · 🗺️ [Architecture](ARCHITECTURE.md) · 🎬 [Demo](DEMO.md) · 💥 [Teardown](TEARDOWN.md) · 📸 [Snapshots](SNAPSHOTS.md)
+
+## ✨ What it does
 
 When someone (or something) stops a managed VM, AWX starts it again, without a human, in about one to two minutes.
 
@@ -13,7 +15,7 @@ VM stopped (gcloud, console, API)
   -> job starts the VM through the Compute API and waits until it is RUNNING
 ```
 
-## Design choices (good interview material)
+## 🔹 Design choices (good interview material)
 
 | Choice | Why |
 |---|---|
@@ -24,7 +26,7 @@ VM stopped (gcloud, console, API)
 | **Opt-out label** | `selfheal=off` on a VM tells the job to leave it stopped. Only VMs with `ansible_managed=true` are ever touched |
 | Standard library only, code in a ConfigMap | No image to build or store. The bridge runs on a stock Python image |
 
-## What was added
+## ✨ What was added
 
 | Piece | Where |
 |---|---|
@@ -35,7 +37,7 @@ VM stopped (gcloud, console, API)
 | Template `40 Heal: start stopped VM`, user `selfheal` and its role | `ansible/awx-config/` |
 | `infra` workflow | now includes the `selfheal` stack |
 
-## Deploy
+## 🔹 Deploy
 
 1. Unzip over the repo, commit and push to `main`.
 2. **`infra`** runs the four stacks in order (`platform`, `awx`, `fleet`, `selfheal`). Approve each stage if asked. `fleet` adds the conditional start permission, and `selfheal` creates everything else. The first run of `selfheal` also enables the Pub/Sub API, which can take a minute.
@@ -47,7 +49,7 @@ VM stopped (gcloud, console, API)
    ```
    You should see `{"event": "started", ...}`.
 
-## Demo: break it and watch it heal
+## 🎬 Demo: break it and watch it heal
 
 ```powershell
 # 1. Pick a dev VM and note its zone
@@ -70,7 +72,7 @@ gcloud compute instances list --project gcp-awx-ops --filter="name=web-dev-02" -
 
 To run the heal by hand (no stop event), use **ops-trigger** with template `40 Heal: start stopped VM` and extra vars `{"heal_instance": "web-dev-02", "heal_zone": "asia-south1-a"}`.
 
-## Keep a VM stopped on purpose
+## 🔹 Keep a VM stopped on purpose
 
 ```powershell
 gcloud compute instances add-labels web-dev-02 --zone <zone> --project gcp-awx-ops --labels=selfheal=off
@@ -78,7 +80,7 @@ gcloud compute instances add-labels web-dev-02 --zone <zone> --project gcp-awx-o
 
 Remove it later with `remove-labels --labels=selfheal`. Do this **before** you stop VMs to save money, or they will be started again. Terraform updates that stop a VM (changing its machine type, say) need the same label first. Destroying the `fleet` stack is not affected.
 
-## Troubleshooting
+## 🔧 Troubleshooting
 
 | Symptom | Likely cause |
 |---|---|
@@ -90,9 +92,17 @@ Remove it later with `remove-labels --labels=selfheal`. Do this **before** you s
 | Heal job says `optout` or `unmanaged` | The VM has `selfheal=off`, or lacks the label `ansible_managed=true` |
 | `infra`: the `selfheal` stack fails on the Pub/Sub API | The API is still being enabled. Rerun the workflow |
 
-## Notes and trade-offs
+## 🔧 Notes and trade-offs
 
 - **`compute.instanceAdmin.v1` is broad**, even with the per-VM condition, and every AWX job pod shares the same service account. In production, use a custom role that has only start, get and list, plus a separate service account for the heal job.
 - **One event, one job.** Events older than an hour are dropped. Two stops in a row queue two jobs, and the second finds the VM running and does nothing.
 - **Not run end to end yet.** The playbook and the bridge were tested against mock servers in a sandbox (start, opt-out, unmanaged, already running, missing, still stopping, AWX errors, redelivery). The Terraform was formatted and reviewed but not applied. The first run in your project is the real test, so send me the log if a step fails.
 - **Phase 6b, the provisioning callback**, comes next: new VMs call AWX at boot to configure themselves. That needs a way for VMs to reach AWX (an internal load balancer), so it is a separate step.
+
+---
+
+<div align="center">
+
+**Maintained by Bikram Singh** · [⬆ Back to README](../README.md)
+
+</div>

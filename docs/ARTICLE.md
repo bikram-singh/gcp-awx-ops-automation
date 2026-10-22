@@ -1,4 +1,6 @@
-# I built the platform that runs my servers: Day-2 operations on GCP with Terraform, GitHub Actions and AWX
+# 📝 I built the platform that runs my servers: Day-2 operations on GCP with Terraform, GitHub Actions and AWX
+
+> 🏠 [README](../README.md) · 🏛️ [HLD](HLD.md) · 🗺️ [Architecture](ARCHITECTURE.md) · 🎬 [Demo](DEMO.md) · 💥 [Teardown](TEARDOWN.md) · 📸 [Snapshots](SNAPSHOTS.md)
 
 *Draft for Medium. Replace each `[SCREENSHOT: ...]` with the image from your SS.docx.*
 
@@ -8,23 +10,23 @@ The result is a platform where Terraform provisions everything, GitHub Actions d
 
 [SCREENSHOT: platform.png architecture diagram]
 
-## The shape of it
+## 🧱 The shape of it
 
 - **Terraform**, five stacks: `platform` (VPC, private GKE, Cloud SQL, image registry), `awx` (the operator and AWX), `fleet` (labelled VMs), `selfheal` (Pub/Sub, log sinks, bridge) and an optional `ingress`.
 - **GitHub Actions**: plan on pull request, apply on merge behind an approval, authenticated with Workload Identity Federation. No JSON keys. Separate pipelines for lint, the execution-environment image and AWX configuration.
 - **AWX**: job templates, a staged patching workflow, schedules, RBAC and notifications, all created from a YAML file in the repo.
 
-## Principle 1: nothing is clicked into existence
+## 📐 Principle 1: nothing is clicked into existence
 
 AWX is configured by a playbook using the `awx.awx` collection. Credentials, project, inventory, execution environment, templates, workflow, schedule, teams and notifications all live in `awx_config.yml`. A workflow called `awx-config` applies it on every merge and adopts anything I had built by hand, by name. If someone edits AWX in the UI, the next run puts it back.
 
 [SCREENSHOT: awx-config run, green]
 
-## Principle 2: keyless, private by default
+## 📐 Principle 2: keyless, private by default
 
 GitHub authenticates to GCP through OIDC. The AWX API is not on the internet, so the workflow gets cluster credentials, port-forwards to the AWX service, and talks to it locally. The VMs have no public IPs.
 
-## Day-2 in practice
+## ⚙️ Day-2 in practice
 
 **Self-service operations.** A GitHub workflow, `ops-trigger`, lets me launch a template by name, with a limit and extra variables, and waits for the result. Jobs 29 and 35 were the first correct runs, after a bug I describe below.
 
@@ -47,7 +49,7 @@ GitHub authenticates to GCP through OIDC. The AWX API is not on the internet, so
 
 **Separation of duties.** Viewers look, operators run, approvers approve production. The auditor role is on the organization, execute rights are per template, and the approval role is only on the workflow.
 
-## Quality gates and hardening
+## ✅ Quality gates and hardening
 
 Config as code is only as good as its checks, so every change to playbooks or roles runs through a `lint` workflow: ansible-lint on the strictest profile, then a Molecule test of each role in a real Debian 12 container with systemd. Molecule converges the role, runs it again to prove it changes nothing, and verifies the result.
 
@@ -60,7 +62,7 @@ I also built a custom execution environment, the image every AWX job runs in: th
 
 [SCREENSHOT: ee-build and the "05 Execution environment check" output]
 
-## Alerts when something fails
+## 🔔 Alerts when something fails
 
 AWX notification templates send job failures, "approval needed" requests and, for chosen templates, successes to a chat webhook. They are only created when a secret is set, so the repository works without them.
 
@@ -73,7 +75,7 @@ After that, a red alert for the failed job and a green one for a connectivity ch
 
 [SCREENSHOT: Discord channel with a failed and a succeeded alert]
 
-## An optional front door
+## 🚪 An optional front door
 
 By default I reach AWX through a port-forward. For demos I added an optional Terraform stack: a global load balancer, a Google-managed certificate and a Cloud Armor allowlist. It does nothing until you set a domain *and* at least one allowed address. A domain without an allowlist is refused, and `0.0.0.0/0` is refused. AWX can start and stop every server in the fleet, so its login page should not be open to the internet. Pipelines keep using the private tunnel.
 
@@ -81,7 +83,7 @@ I pointed `awx.gcpcloudhub.in` at the load balancer address in my DNS host, and 
 
 [SCREENSHOT: AWX dashboard at https://awx.gcpcloudhub.in]
 
-## What broke (the useful part)
+## 🔧 What broke (the useful part)
 
 1. **Launched the wrong template.** My trigger passed `-e template=10 Health check` and Ansible split on the space, then treated a numeric-looking name as an AWX ID. It quietly ran job 23, a connectivity check. Fix: pass JSON arguments built with `jq`, and assert that the name is not numeric.
 2. **"Playbook not found".** The template was created before the project had synced. Fix: an explicit project update that waits, before templates.
@@ -92,14 +94,22 @@ I pointed `awx.gcpcloudhub.in` at the load balancer address in my DNS host, and 
 7. **Molecule failed on `sshd -t`.** Inside a test container sshd has never started, so its runtime directory does not exist. The role was fine; the test setup needed to create `/run/sshd`.
 8. **A template that did not accept a limit.** My launcher always passes one, and AWX refuses a limit on a template that does not allow it. A one-line change.
 
-## What I would do next
+## 🔭 What I would do next
 
 A self-hosted runner or Connect Gateway for a fully private control plane, identity-aware access instead of an IP allowlist, and more roles (user management, certificate checks) on the same pattern.
 
-## Cost and teardown
+## 💰 Cost and teardown
 
 GKE nodes and Cloud SQL are the bill. The whole thing destroys in a handful of steps, in reverse order, and I wrote that down so it is a habit, not a hope.
 
 Code: https://github.com/bikram-singh/gcp-awx-ops-automation
 
 *Tags: GCP, DevOps, Ansible, Terraform, AWX, SRE*
+
+---
+
+<div align="center">
+
+**Maintained by Bikram Singh** · [⬆ Back to README](../README.md)
+
+</div>

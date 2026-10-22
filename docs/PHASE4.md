@@ -1,6 +1,8 @@
-# Phase 4: AWX configuration as code and job pipelines
+# 📘 Phase 4: AWX configuration as code and job pipelines
 
-## What this phase adds
+> 🏠 [README](../README.md) · 🏛️ [HLD](HLD.md) · 🗺️ [Architecture](ARCHITECTURE.md) · 🎬 [Demo](DEMO.md) · 💥 [Teardown](TEARDOWN.md) · 📸 [Snapshots](SNAPSHOTS.md)
+
+## ✨ What this phase adds
 
 | Piece | Where | What it does |
 |---|---|---|
@@ -13,17 +15,17 @@
 
 Result: AWX can be rebuilt from Git with no UI clicks, and operations can be started from GitHub with an audit trail.
 
-## How it works
+## 🚀 How it works
 
 AWX runs in a private cluster, so GitHub cannot call its API directly. Each workflow logs in to GCP keylessly (the same Workload Identity setup as `infra`), gets cluster credentials, opens `kubectl port-forward` to `svc/awx-service`, reads the admin password from the `awx-admin-password` secret, and then runs Ansible against `http://localhost:8080`. No new GCP permissions are needed: the deployer service account already has `roles/container.admin`.
 
-## One-time setup
+## 🔹 One-time setup
 
 1. Optional but recommended: add the fleet private key as a repository **secret** named `FLEET_SSH_PRIVATE_KEY` (Settings, Secrets and variables, Actions, Secrets). Paste the full contents of `awx_fleet` (the file with no extension). Without it, the workflow leaves the `fleet-ssh` credential you created by hand as it is.
 2. Optional variables: `GKE_CLUSTER` (default `awxplat-gke`) and `GCP_REGION` (default `asia-south1`).
 3. The `production` environment already exists. `ops-trigger` uses it only for the real patching template, so a reviewer must approve that one.
 
-## Run it
+## 🔹 Run it
 
 1. Commit and push to `main`. The `awx-config` workflow starts because files under `ansible/awx-config/` changed. You can also start it from the Actions tab.
 2. In AWX, check **Templates**: you should see the three existing templates plus `21 Patch Linux DEV (dry run)`, and **Schedules** with `Daily health check 02:00 UTC`.
@@ -31,11 +33,11 @@ AWX runs in a private cluster, so GitHub cannot call its API directly. Each work
 4. Try `21 Patch Linux DEV (dry run)` next. It runs in check mode against `env_dev` and changes nothing.
 5. Real patching: pick `20 Patch Linux (rolling)`, limit `env_dev`, extra vars `{"patch_batch_size": 1, "patch_max_fail_percent": 0}`. GitHub asks a reviewer to approve the `production` environment first.
 
-## Change the AWX setup
+## 🔹 Change the AWX setup
 
 Edit `awx_config.yml` (for example add a template or change the schedule), push, and the workflow applies it. Because the names match the objects you built by hand, the first run adopts them instead of creating duplicates.
 
-## Troubleshooting
+## 🔧 Troubleshooting
 
 | Symptom | Likely cause |
 |---|---|
@@ -46,7 +48,15 @@ Edit `awx_config.yml` (for example add a template or change the schedule), push,
 | Schedule rejected | `rrule` must start with `DTSTART:` in UTC, for example `DTSTART:20261022T020000Z RRULE:FREQ=DAILY;INTERVAL=1` |
 | `ops-trigger` fails on a real run | Open the AWX job (the ID is in the log) and read its output. The workflow fails when the AWX job fails |
 
-## Notes
+## 📝 Notes
 
 - Not run end to end yet. The playbooks were syntax-checked in a sandbox without the real `awx.awx` modules, so the first run is the real test. Send me the log if it fails.
 - If the AWX instance is reset or rebuilt, run `awx-config` again and the whole setup returns.
+
+---
+
+<div align="center">
+
+**Maintained by Bikram Singh** · [⬆ Back to README](../README.md)
+
+</div>

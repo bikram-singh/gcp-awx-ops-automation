@@ -1,6 +1,8 @@
-# Phase 8: provisioning callback (6b) and notifications (7b)
+# 📘 Phase 8: provisioning callback (6b) and notifications (7b)
 
-## 6b. New VMs configure themselves
+> 🏠 [README](../README.md) · 🏛️ [HLD](HLD.md) · 🗺️ [Architecture](ARCHITECTURE.md) · 🎬 [Demo](DEMO.md) · 💥 [Teardown](TEARDOWN.md) · 📸 [Snapshots](SNAPSHOTS.md)
+
+## ⚙️ 6b. New VMs configure themselves
 
 No load balancer and no extra cost. The self-healing path from Phase 6 already sees every Compute Engine audit event, so a second log sink sends **completed VM creations** to the same Pub/Sub topic.
 
@@ -19,12 +21,12 @@ What `45 Onboard new VM` does (`ansible/playbooks/onboard_vm.yml`):
 
 The `selfheal` AWX user may run templates 40 and 45 and nothing else.
 
-### Roll out
+### 🔹 Roll out
 
 1. Merge to `main`. `infra` applies `selfheal` (second sink, bridge restarts with the new code). `awx-config` creates template 45 and grants the bridge user access. Order does not matter; if the bridge runs first it logs `awx_lookup_error` and skips.
 2. Check the bridge: `kubectl -n awx logs deploy/selfheal-bridge --tail=5` shows `onboard_template` set.
 
-### Prove it (about 5 minutes, about 1 cent)
+### 🔹 Prove it (about 5 minutes, about 1 cent)
 
 Add one line to `var.fleet` in `terraform/fleet/variables.tf`:
 
@@ -34,7 +36,7 @@ Add one line to `var.fleet` in `terraform/fleet/variables.tf`:
 
 Merge. `infra` creates the VM; within a minute AWX shows job **45 Onboard new VM** with limit `app-dev-02`, and the bridge log shows `"action": "onboard"`. Remove the line later to delete the VM again.
 
-## 7b. Notifications
+## 🔔 7b. Notifications
 
 AWX notification template **Ops alerts (webhook)**, attached to every job template and workflow:
 - job or workflow **failed**
@@ -43,7 +45,7 @@ AWX notification template **Ops alerts (webhook)**, attached to every job templa
 
 It is a plain JSON webhook with a `{"text": "..."}` body, which Slack, Mattermost and Teams workflow webhooks accept. It is **only created when the secret exists**. Without it nothing changes.
 
-### Turn it on
+### 🟢 Turn it on
 
 Pick one channel. All three use the same two settings: the secret `NOTIFY_WEBHOOK_URL` and, for Teams only, the variable `NOTIFY_FORMAT`.
 
@@ -73,7 +75,7 @@ Then, for any channel:
 
 **Links in alerts.** AWX builds them from the setting `TOWER_URL_BASE`. When the repository variable `AWX_DOMAIN` is set, `awx-config` sets it to `https://<AWX_DOMAIN>` so links open the real AWX. Without it AWX writes the placeholder `towerhost`.
 
-### Proven on this build
+### 🔹 Proven on this build
 
 | Check | Result |
 |---|---|
@@ -84,14 +86,22 @@ Then, for any channel:
 
 The webhook URL is stored as an AWX secret and is never printed in logs (`no_log`). If a message does not look right in your tool, change the `body` strings under `awx_notifications` in `awx_config.yml` (`messages` for Slack-style, `messages_teams` for Adaptive Cards); no other file is involved.
 
-### Email instead
+### 🔹 Email instead
 
 For email, change `notification_type` to `email` in `configure.yml` and add SMTP settings (host, port, user, app password, sender, recipients).
 
-## Files changed
+## 🔹 Files changed
 
 - `ansible/playbooks/onboard_vm.yml` (new)
 - `ansible/awx-config/awx_config.yml`, `configure.yml`: template 45, bridge permissions, notification template and attachments
 - `terraform/selfheal/bridge.py`, `main.tf`, `variables.tf`: second sink and dispatch
 - `.github/workflows/awx-config.yml`, `ops-trigger.yml`: `NOTIFY_WEBHOOK_URL` secret, `NOTIFY_FORMAT` and `AWX_DOMAIN` variables, template 45 in the picker
 - `awx_config.yml`, `configure.yml`: success message, `notify_success` flag, `TOWER_URL_BASE` setting
+
+---
+
+<div align="center">
+
+**Maintained by Bikram Singh** · [⬆ Back to README](../README.md)
+
+</div>

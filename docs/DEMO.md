@@ -1,16 +1,18 @@
-# Demo script (10 minutes) and interview talking points
+# 🎬 Demo script (10 minutes) and interview talking points
 
-## Before you start (2 minutes, off camera)
+> 🏠 [README](../README.md) · 🏛️ [HLD](HLD.md) · 🗺️ [Architecture](ARCHITECTURE.md) · 🎬 [Demo](DEMO.md) · 💥 [Teardown](TEARDOWN.md) · 📸 [Snapshots](SNAPSHOTS.md)
+
+## 🧰 Before you start (2 minutes, off camera)
 
 - Fleet is running: `gcloud compute instances list` shows the six VMs (web-dev-01/02, app-dev-01, db-dev-01, web-prod-01, app-prod-01) as RUNNING.
 - AWX port-forward is up (`kubectl -n awx port-forward svc/awx-service 8080:80`) and you are logged in.
 - GitHub tabs open: Actions (infra, awx-config, ops-trigger, daily-report) and the repo README.
 
-## The story in one sentence
+## 📖 The story in one sentence
 
 "Servers are easy to build and hard to operate, so I built the platform that runs the operations: Terraform builds it, GitHub Actions delivers it with no stored keys, and AWX runs patching, health checks, snapshots and self-healing with approvals and audit."
 
-## Run of show
+## 🎬 Run of show
 
 | Min | Show | Say |
 |---|---|---|
@@ -26,7 +28,7 @@
 
 For a 10-minute slot, skip the live provisioning merge and the HTTPS page.
 
-## Talking points (likely interview questions)
+## 💬 Talking points (likely interview questions)
 
 **Why AWX and not just GitHub Actions running Ansible?**
 Actions is the delivery pipeline. AWX is the operations plane: inventory, credentials the operators never see, RBAC, schedules, approvals, job history and a REST API. This is the same model as Ansible Automation Platform, which many enterprises already license.
@@ -59,3 +61,11 @@ It is private by default and pipelines use a tunnel. The optional HTTPS entry re
 
 **Cost?**
 Main costs are GKE nodes and Cloud SQL, plus about $18 to $25 a month if the optional HTTPS entry is on. The whole stack is destroyable in a few steps; see TEARDOWN.md.
+
+---
+
+<div align="center">
+
+**Maintained by Bikram Singh** · [⬆ Back to README](../README.md)
+
+</div>
