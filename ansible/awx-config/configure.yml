@@ -42,6 +42,14 @@
         wait: true
         state: present
 
+    # AWX only accepts a template if the playbook is in the project's last sync, so pull the newest commit first.
+    - name: Sync the project so new playbooks are visible
+      awx.awx.project_update:
+        name: "{{ awx_project.name }}"
+        organization: "{{ awx_organization }}"
+        wait: true
+        timeout: 600
+
     - name: Inventory
       awx.awx.inventory:
         name: "{{ awx_inventory.name }}"
