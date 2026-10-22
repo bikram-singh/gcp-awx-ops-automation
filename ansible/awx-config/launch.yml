@@ -11,8 +11,12 @@
   tasks:
     - name: Require a template name
       ansible.builtin.assert:
-        that: template is defined and template | length > 0
-        fail_msg: Pass -e template="<job template name>"
+        that:
+          - template is defined
+          - template | string | length > 0
+          # A purely numeric value would be treated by AWX as a template ID, not a name.
+          - template | string is not match('^[0-9]+$')
+        fail_msg: Pass the full job template name, for example "10 Health check"
         quiet: true
 
     - name: Launch and wait
@@ -26,4 +30,4 @@
 
     - name: Result
       ansible.builtin.debug:
-        msg: "Job {{ job.id }} finished with status {{ job.status }}"
+        msg: "Job {{ job.id }} ({{ template }}) finished with status {{ job.status }}"
