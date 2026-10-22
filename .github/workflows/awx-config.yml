@@ -8,6 +8,7 @@ name: awx-config
 # Optional SECRETS:   FLEET_SSH_PRIVATE_KEY (creates or keeps the fleet-ssh credential in step with Git)
 #                     NOTIFY_WEBHOOK_URL (chat webhook for failure and approval alerts)
 # Optional VARIABLE:  NOTIFY_FORMAT = teams for a Microsoft Teams Workflows webhook (default: Slack-style body)
+#                     AWX_DOMAIN variable (same one the ingress uses) makes links in alerts open your AWX
 #                     DEMO_USER_PASSWORD (creates the demo users viewer, operator and approver)
 
 on:
@@ -47,6 +48,7 @@ jobs:
           DEMO_USER_PASSWORD: ${{ secrets.DEMO_USER_PASSWORD }}
           NOTIFY_WEBHOOK_URL: ${{ secrets.NOTIFY_WEBHOOK_URL }}
           NOTIFY_FORMAT: ${{ vars.NOTIFY_FORMAT }}
+          AWX_DOMAIN: ${{ vars.AWX_DOMAIN }}
         run: ansible-playbook ansible/awx-config/configure.yml
 
       - name: Summary

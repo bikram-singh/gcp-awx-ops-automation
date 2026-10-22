@@ -17,6 +17,12 @@
         fail_msg: Set CONTROLLER_HOST, CONTROLLER_USERNAME and CONTROLLER_PASSWORD first
         quiet: true
 
+    - name: Public address used in links inside alerts (only when AWX_DOMAIN is set)
+      awx.awx.settings:
+        name: TOWER_URL_BASE
+        value: "https://{{ lookup('ansible.builtin.env', 'AWX_DOMAIN') }}"
+      when: lookup('ansible.builtin.env', 'AWX_DOMAIN') | length > 0
+
     - name: SSH credential for the fleet (only when the key is supplied)
       awx.awx.credential:
         name: "{{ awx_credential.name }}"
