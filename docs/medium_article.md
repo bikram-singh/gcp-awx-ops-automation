@@ -6,11 +6,11 @@ PUBLISHING NOTES (delete this block before you publish):
 - Medium supports H1/H2 headings, bold, bullet lists and code blocks. Use "##" lines as section headings.
 -->
 
-# I built the Ansible Ops Platform on GCP: Day-2 operations with Terraform, GitHub Actions and AWX
+# Ansible Ops Platform on GCP: Private GKE, AWX, Workload Identity and Event-Driven Self-Healing
 
 **GCP · Terraform · GitHub Actions · AWX · Ansible · GKE · Pub/Sub · Self-healing · DevOps · SRE**
 
-*A practical, screenshot-by-screenshot story of a platform that runs the daily operations of a server fleet: patching, hardening, health checks, snapshots, self-healing and alerts. Terraform provisions it, GitHub Actions delivers it with no stored keys, AWX (the open-source upstream of Ansible Tower) operates it. Built from scratch on a real GCP project and proved end to end.*
+*Terraform provisions it, GitHub Actions delivers it with no stored keys, and AWX runs patching, hardening, self-healing and alerts. Built and proved end to end on Google Cloud.*
 
 ![Ansible Ops Platform on GCP: architecture](https://raw.githubusercontent.com/bikram-singh/gcp-awx-ops-automation/main/docs/architecture/architecture-gcp.png)
 

@@ -21,7 +21,7 @@
 
 Terraform provisions it. GitHub Actions delivers it. AWX (upstream of Ansible Tower / Automation Controller) runs the daily operations.
 
-📝 **Medium Article:** draft in [docs/ARTICLE.md](docs/ARTICLE.md) (link added on publish)
+📝 **Medium Article:** draft in [docs/medium_article.md](docs/medium_article.md) (link added on publish)
 
 ![Ansible Ops Platform on GCP: architecture](docs/architecture/architecture-gcp.svg)
 
@@ -156,7 +156,7 @@ Vector version: [docs/architecture/architecture-gcp.svg](docs/architecture/archi
 
 ![Platform](docs/img/platform.png)
 
-More: [Demo script](docs/DEMO.md) | [Teardown](docs/TEARDOWN.md) | [Medium article draft](docs/ARTICLE.md) | [Snapshots](docs/SNAPSHOTS.md)
+More: [Demo script](docs/DEMO.md) | [Teardown](docs/TEARDOWN.md) | [Medium article draft](docs/medium_article.md) | [Snapshots](docs/SNAPSHOTS.md)
 
 ### 🔄 Build Order
 
@@ -282,7 +282,7 @@ More: [Demo script](docs/DEMO.md) | [Teardown](docs/TEARDOWN.md) | [Medium artic
 
 ```
 docs/
-├── HLD.md  ARCHITECTURE.md  DEMO.md  TEARDOWN.md  INGRESS.md  ARTICLE.md
+├── HLD.md  ARCHITECTURE.md  DEMO.md  TEARDOWN.md  INGRESS.md  medium_article.md
 ├── PHASE2.md ... PHASE8.md       # what each phase built and how to run it
 ├── SNAPSHOTS.md                  # every snapshot with a caption
 ├── architecture/                 # architecture-gcp.svg and .png (Google Cloud icons)
@@ -667,7 +667,7 @@ Real screenshots taken from the Google Cloud console, the terminal, AWX and GitH
 | 🌐 [docs/INGRESS.md](docs/INGRESS.md) | Optional HTTPS entry |
 | 🎬 [docs/DEMO.md](docs/DEMO.md) | 10-minute demo script and interview talking points |
 | 💥 [docs/TEARDOWN.md](docs/TEARDOWN.md) | Destroy everything in the right order |
-| 📝 [docs/ARTICLE.md](docs/ARTICLE.md) | Medium article draft |
+| 📝 [docs/medium_article.md](docs/medium_article.md) | Medium article draft |
 | 📸 [docs/SNAPSHOTS.md](docs/SNAPSHOTS.md) | All snapshots from the live run, by phase |
 
 ---
