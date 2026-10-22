@@ -1,0 +1,51 @@
+name: daily-report
+
+# Every morning: run the health check through AWX, turn its results into a table, keep it as a build artifact.
+# The run goes red when any host needs attention, and GitHub emails the repository owner about failed runs.
+# Required repository VARIABLES: GCP_WIF_PROVIDER, GCP_DEPLOYER_SA
+# Optional VARIABLES: GKE_CLUSTER (default awxplat-gke), GCP_REGION (default asia-south1)
+
+on:
+  schedule:
+    - cron: "30 3 * * *" # 03:30 UTC = 09:00 India time
+  workflow_dispatch:
+    inputs:
+      fail_on_warn:
+        description: Fail the run when any host needs attention
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/awx-connect
+        with:
+          wif_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_DEPLOYER_SA }}
+          cluster: ${{ vars.GKE_CLUSTER || 'awxplat-gke' }}
+          location: ${{ vars.GCP_REGION || 'asia-south1' }}
+
+      - name: Run the health check and build the report
+        env:
+          FAIL_ON_WARN: ${{ github.event_name == 'schedule' && 'true' || inputs.fail_on_warn }}
+        run: ansible-playbook ansible/awx-config/report.yml -e "report_file=${PWD}/report.md" -e "fail_on_warn=${FAIL_ON_WARN}"
+
+      - name: Show the report on the run page
+        if: always()
+        run: |
+          if [ -f report.md ]; then cat report.md >> "$GITHUB_STEP_SUMMARY"; fi
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: fleet-health-report
+          path: report.md
+          if-no-files-found: ignore

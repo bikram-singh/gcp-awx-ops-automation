@@ -130,3 +130,37 @@ awx_selfheal:
   username: selfheal
   templates:
     - "40 Heal: start stopped VM"
+
+# Access control. Three teams with separate duties: look, operate, approve prod.
+# Nobody needs the admin account for daily work. The people in the teams below are demo users that are
+# only created when the DEMO_USER_PASSWORD repository secret is set (see docs/PHASE7.md).
+awx_rbac:
+  teams:
+    - name: ops-readonly
+      description: Can see everything in the organization, can change nothing
+    - name: ops-operators
+      description: Runs day-to-day operations (connectivity, health, dry-run patching, snapshots)
+    - name: prod-approvers
+      description: Decides whether patching is promoted to production
+  grants:
+    - team: ops-readonly
+      role: auditor
+      organization: Default
+    - team: ops-operators
+      role: execute
+      job_templates:
+        - "00 Connectivity check"
+        - "10 Health check"
+        - "21 Patch Linux DEV (dry run)"
+        - "30 Snapshot disks (pre-patch)"
+    - team: prod-approvers
+      role: approval
+      workflows:
+        - "50 Staged patching (dev, approve, prod)"
+  demo_users:
+    - username: viewer
+      team: ops-readonly
+    - username: operator
+      team: ops-operators
+    - username: approver
+      team: prod-approvers

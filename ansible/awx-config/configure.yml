@@ -165,3 +165,51 @@
       when:
         - awx_selfheal is defined
         - lookup('ansible.builtin.env', 'SELFHEAL_PASSWORD') | length > 0
+
+    - name: Teams
+      awx.awx.team:
+        name: "{{ item.name }}"
+        description: "{{ item.description | default('') }}"
+        organization: "{{ awx_organization }}"
+        state: present
+      loop: "{{ awx_rbac.teams | default([]) }}"
+      loop_control:
+        label: "{{ item.name }}"
+
+    - name: Give each team its role
+      awx.awx.role:
+        teams:
+          - "{{ item.team }}"
+        role: "{{ item.role }}"
+        organizations: "{{ [item.organization] if item.organization is defined else omit }}"
+        job_templates: "{{ item.job_templates | default(omit) }}"
+        workflows: "{{ item.workflows | default(omit) }}"
+        state: present
+      loop: "{{ awx_rbac.grants | default([]) }}"
+      loop_control:
+        label: "{{ item.team }}: {{ item.role }}"
+
+    - name: Demo users (only when their shared password is supplied)
+      awx.awx.user:
+        username: "{{ item.username }}"
+        password: "{{ lookup('ansible.builtin.env', 'DEMO_USER_PASSWORD') }}"
+        update_secrets: false
+        state: present
+      loop: "{{ awx_rbac.demo_users | default([]) }}"
+      loop_control:
+        label: "{{ item.username }}"
+      when: lookup('ansible.builtin.env', 'DEMO_USER_PASSWORD') | length > 0
+      no_log: true
+
+    - name: Put the demo users in their teams
+      awx.awx.role:
+        users:
+          - "{{ item.username }}"
+        target_teams:
+          - "{{ item.team }}"
+        role: member
+        state: present
+      loop: "{{ awx_rbac.demo_users | default([]) }}"
+      loop_control:
+        label: "{{ item.username }} in {{ item.team }}"
+      when: lookup('ansible.builtin.env', 'DEMO_USER_PASSWORD') | length > 0

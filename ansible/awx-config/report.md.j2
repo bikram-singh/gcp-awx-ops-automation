@@ -1,0 +1,11 @@
+# Fleet health report
+
+- Generated: {{ now(utc=true, fmt='%Y-%m-%d %H:%M UTC') }}
+- Source: AWX job {{ job_number }} ({{ health_template }})
+- Hosts checked: {{ rows | length }}, healthy: {{ (rows | length) - (warned | length) }}, need attention: {{ warned | length }}
+
+| Host | Status | Memory used % | Load per vCPU | Uptime (h) | Findings |
+|---|---|---|---|---|---|
+{% for r in rows | sort(attribute='host') %}
+| {{ r.host }} | {{ r.status }} | {{ r.mem_used_percent }} | {{ r.load_per_cpu }} | {{ r.uptime_hours }} | {{ (r.issues | join('; ')) if r.issues else 'none' }} |
+{% endfor %}

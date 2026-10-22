@@ -1,0 +1,66 @@
+---
+# Runs the health check in AWX on every host, reads its health_report artifact and writes a Markdown report.
+# Connection settings come from the environment (CONTROLLER_HOST, CONTROLLER_USERNAME, CONTROLLER_PASSWORD).
+# Extra vars (all optional):
+#   report_file     where to write the report           (default: report.md next to this playbook)
+#   fail_on_warn    fail the run when any host is WARN  (default: true), so GitHub sends its failure email
+#   health_job_id   use an existing job instead of launching one (for testing)
+- name: Fleet health report
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    health_template: 10 Health check
+    report_file: "{{ playbook_dir }}/report.md"
+    fail_on_warn: true
+  tasks:
+    - name: Run the health check on all hosts and wait
+      awx.awx.job_launch:
+        job_template: "{{ health_template }}"
+        limit: all
+        wait: true
+        timeout: 1800
+      register: job
+      when: health_job_id is not defined
+
+    - name: Read the finished job
+      ansible.builtin.uri:
+        url: "{{ lookup('ansible.builtin.env', 'CONTROLLER_HOST') }}/api/v2/jobs/{{ health_job_id | default(job.id | default(0)) }}/"
+        url_username: "{{ lookup('ansible.builtin.env', 'CONTROLLER_USERNAME') }}"
+        url_password: "{{ lookup('ansible.builtin.env', 'CONTROLLER_PASSWORD') }}"
+        force_basic_auth: true
+        return_content: true
+      register: finished
+      no_log: true
+
+    - name: Pick out the per-host results
+      ansible.builtin.set_fact:
+        rows: "{{ finished.json.artifacts.health_report | default([]) }}"
+        job_number: "{{ finished.json.id }}"
+
+    - name: Stop if the job published no results
+      ansible.builtin.assert:
+        that: rows | length > 0
+        fail_msg: The health check job {{ job_number }} produced no health_report artifact
+        quiet: true
+
+    - name: Hosts that need attention
+      ansible.builtin.set_fact:
+        warned: "{{ rows | rejectattr('status', 'equalto', 'OK') | list }}"
+
+    - name: Write the report
+      ansible.builtin.template:
+        src: report.md.j2
+        dest: "{{ report_file }}"
+        mode: "0644"
+
+    - name: Summary
+      ansible.builtin.debug:
+        msg: "{{ rows | length }} hosts, {{ warned | length }} need attention. Report: {{ report_file }}"
+
+    - name: Fail when any host needs attention
+      ansible.builtin.fail:
+        msg: "{{ warned | map(attribute='host') | join(', ') }} need attention, see the report"
+      when:
+        - fail_on_warn | bool
+        - warned | length > 0

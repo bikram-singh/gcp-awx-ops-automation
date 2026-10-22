@@ -94,7 +94,9 @@ Prerequisites: a GCP project with billing, `gcloud`, `terraform >= 1.6`, a GitHu
 - [x] Phase 5: Staged patching workflow (pre-check, snapshot, patch, verify, approval, prod) (see [docs/PHASE5.md](docs/PHASE5.md))
 - [x] Phase 6a: Self-healing, a stopped VM is started again by AWX (see [docs/PHASE6.md](docs/PHASE6.md))
 - [ ] Phase 6b: Provisioning callback (new VMs configure themselves on boot)
-- [ ] Phase 7: RBAC, notifications, daily report, docs, demo, article
+- [ ] Phase 7a (code written, pending first run): RBAC with separate look, operate and approve duties, plus a daily health report (see [docs/PHASE7.md](docs/PHASE7.md))
+- [ ] Phase 7b: AWX notifications (failures and approvals)
+- [ ] Phase 7c: diagrams, demo script, Medium article
 
 ## Cost note
 
