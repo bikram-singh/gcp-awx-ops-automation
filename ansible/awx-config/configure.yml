@@ -147,6 +147,10 @@
           and (awx_execution_environment.use_for_all | default(false) or item.custom_ee | default(false))
           else omit }}
         notification_templates_error: "{{ [awx_notifications.name] if notifications_on | bool else omit }}"
+        notification_templates_success: >-
+          {{ [awx_notifications.name]
+          if notifications_on | bool and item.notify_success | default(false)
+          else omit }}
         state: present
       loop: "{{ awx_templates }}"
       loop_control:

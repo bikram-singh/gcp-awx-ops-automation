@@ -43,6 +43,7 @@ awx_templates:
     playbook: ansible/playbooks/connectivity_check.yml
     ask_limit: true
     ask_variables: true
+    notify_success: true   # also sends a chat message when this one succeeds (demo of success alerts)
 
   - name: "10 Health check"
     description: Read-only disk, memory, load and failed-service report
@@ -177,6 +178,9 @@ awx_notifications:
     error:
       message: !unsafe "FAILED: {{ job_friendly_name }} #{{ job.id }} {{ job.name }}"
       body: !unsafe '{"text": ":x: AWX {{ job_friendly_name }} #{{ job.id }} \"{{ job.name }}\" failed: {{ url }}"}'
+    success:
+      message: !unsafe "SUCCESS: {{ job_friendly_name }} #{{ job.id }} {{ job.name }}"
+      body: !unsafe '{"text": ":white_check_mark: AWX {{ job_friendly_name }} #{{ job.id }} \"{{ job.name }}\" succeeded: {{ url }}"}'
     workflow_approval:
       running:
         message: !unsafe "Approval needed"
@@ -196,6 +200,9 @@ awx_notifications:
     error:
       message: !unsafe "FAILED: {{ job_friendly_name }} #{{ job.id }} {{ job.name }}"
       body: !unsafe '{"type":"message","attachments":[{"contentType":"application/vnd.microsoft.card.adaptive","content":{"$schema":"http://adaptivecards.io/schemas/adaptive-card.json","type":"AdaptiveCard","version":"1.4","body":[{"type":"TextBlock","text":"FAILED: {{ job_friendly_name }} #{{ job.id }} {{ job.name }} {{ url }}","wrap":true,"weight":"Bolder"}]}}]}'  # noqa: yaml[line-length]
+    success:
+      message: !unsafe "SUCCESS: {{ job_friendly_name }} #{{ job.id }} {{ job.name }}"
+      body: !unsafe '{"type":"message","attachments":[{"contentType":"application/vnd.microsoft.card.adaptive","content":{"$schema":"http://adaptivecards.io/schemas/adaptive-card.json","type":"AdaptiveCard","version":"1.4","body":[{"type":"TextBlock","text":"SUCCESS: {{ job_friendly_name }} #{{ job.id }} {{ job.name }} {{ url }}","wrap":true,"weight":"Bolder"}]}}]}'  # noqa: yaml[line-length]
     workflow_approval:
       running:
         message: !unsafe "Approval needed"
