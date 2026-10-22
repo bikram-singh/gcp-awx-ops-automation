@@ -14,3 +14,9 @@
         path: /etc/ssh/sshd_config.d
         state: directory
         mode: "0755"
+
+    - name: Create the privilege separation directory (sshd -t refuses to run without it when sshd is not started)
+      ansible.builtin.file:
+        path: /run/sshd
+        state: directory
+        mode: "0755"
