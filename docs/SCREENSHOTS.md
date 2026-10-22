@@ -1,0 +1,401 @@
+# Screenshots
+
+Captured during the live run of the platform (project `gcp-awx-ops`, region `asia-south1`). Grouped by phase. The main [README](../README.md) shows the highlights.
+
+Secrets in the original captures (an admin password, a private key, an IP address, a webhook URL) were removed or masked before publishing.
+
+## Phase 1: Platform foundation
+
+Folder: `docs/screenshots/01-platform/`
+
+**Private GKE cluster awxplat-gke, healthy**
+
+![Private GKE cluster awxplat-gke, healthy](screenshots/01-platform/01-gke-cluster-overview.png)
+
+**Node pool and node status**
+
+![Node pool and node status](screenshots/01-platform/02-gke-node-pool.png)
+
+**AWX operator, task and web workloads running**
+
+![AWX operator, task and web workloads running](screenshots/01-platform/03-awx-workloads-running.png)
+
+**Cloud SQL Postgres 15 with a private IP only**
+
+![Cloud SQL Postgres 15 with a private IP only](screenshots/01-platform/04-cloudsql-private-ip.png)
+
+**VPC and subnets**
+
+![VPC and subnets](screenshots/01-platform/05-vpc-subnets.png)
+
+**Firewall rules (IAP and internal only)**
+
+![Firewall rules (IAP and internal only)](screenshots/01-platform/06-vpc-firewall-rules.png)
+
+**Workload Identity Federation pool for GitHub Actions**
+
+![Workload Identity Federation pool for GitHub Actions](screenshots/01-platform/07-wif-github-pool.png)
+
+**Service accounts created by Terraform**
+
+![Service accounts created by Terraform](screenshots/01-platform/08-service-accounts.png)
+
+**Terraform state bucket with a folder per stack**
+
+![Terraform state bucket with a folder per stack](screenshots/01-platform/09-terraform-state-bucket.png)
+
+**Generated database password in Secret Manager**
+
+![Generated database password in Secret Manager](screenshots/01-platform/10-secret-manager.png)
+
+**gcloud and kubectl: cluster, nodes, pods, Cloud SQL, network**
+
+![gcloud and kubectl: cluster, nodes, pods, Cloud SQL, network](screenshots/01-platform/11-cli-gke-sql-network.png)
+
+**gcloud: subnets, Cloud NAT and service accounts**
+
+![gcloud: subnets, Cloud NAT and service accounts](screenshots/01-platform/12-cli-subnets-nat-service-accounts.png)
+
+**gcloud: identity pool, secrets and state files**
+
+![gcloud: identity pool, secrets and state files](screenshots/01-platform/13-cli-wif-secrets-state.png)
+
+## Phase 2: AWX credential, project and inventory
+
+Folder: `docs/screenshots/02-awx-setup/`
+
+**First login to AWX through the port-forward**
+
+![First login to AWX through the port-forward](screenshots/02-awx-setup/01-awx-first-login-dashboard.png)
+
+**Machine credential fleet-ssh (key stored encrypted)**
+
+![Machine credential fleet-ssh (key stored encrypted)](screenshots/02-awx-setup/02-credential-fleet-ssh.png)
+
+**Project awx-ops-playbooks created from Git**
+
+![Project awx-ops-playbooks created from Git](screenshots/02-awx-setup/03-project-create.png)
+
+**Project sync succeeded**
+
+![Project sync succeeded](screenshots/02-awx-setup/04-project-synced.png)
+
+**Inventory gcp-fleet**
+
+![Inventory gcp-fleet](screenshots/02-awx-setup/05-inventory-gcp-fleet.png)
+
+**Dynamic inventory source from the project (gcp_compute.yml)**
+
+![Dynamic inventory source from the project (gcp_compute.yml)](screenshots/02-awx-setup/06-inventory-source-edit.png)
+
+**Inventory source sync succeeded**
+
+![Inventory source sync succeeded](screenshots/02-awx-setup/07-inventory-source-synced.png)
+
+**Inventory access**
+
+![Inventory access](screenshots/02-awx-setup/08-inventory-access.png)
+
+**Groups built from VM labels (env, role, patch group)**
+
+![Groups built from VM labels (env, role, patch group)](screenshots/02-awx-setup/09-inventory-groups.png)
+
+**Six imported hosts**
+
+![Six imported hosts](screenshots/02-awx-setup/10-inventory-hosts.png)
+
+## Phase 2: first job templates
+
+Folder: `docs/screenshots/03-first-playbooks/`
+
+**Create 00 Connectivity check**
+
+![Create 00 Connectivity check](screenshots/03-first-playbooks/01-template-00-create.png)
+
+**00 Connectivity check details**
+
+![00 Connectivity check details](screenshots/03-first-playbooks/02-template-00-details.png)
+
+**Launch prompt with limit**
+
+![Launch prompt with limit](screenshots/03-first-playbooks/03-template-00-launch-prompt.png)
+
+**Job output: every host answered**
+
+![Job output: every host answered](screenshots/03-first-playbooks/04-job-00-output.png)
+
+**Create 10 Health check**
+
+![Create 10 Health check](screenshots/03-first-playbooks/05-template-10-create.png)
+
+**10 Health check details**
+
+![10 Health check details](screenshots/03-first-playbooks/06-template-10-details.png)
+
+**Launch prompt**
+
+![Launch prompt](screenshots/03-first-playbooks/07-template-10-launch-prompt.png)
+
+**Launch preview**
+
+![Launch preview](screenshots/03-first-playbooks/08-template-10-launch-preview.png)
+
+**Health report output**
+
+![Health report output](screenshots/03-first-playbooks/09-job-10-output.png)
+
+**Create 20 Patch Linux (rolling)**
+
+![Create 20 Patch Linux (rolling)](screenshots/03-first-playbooks/10-template-20-create.png)
+
+**20 Patch Linux details**
+
+![20 Patch Linux details](screenshots/03-first-playbooks/11-template-20-details.png)
+
+**Launch prompt**
+
+![Launch prompt](screenshots/03-first-playbooks/12-template-20-launch-prompt.png)
+
+**Launch preview**
+
+![Launch preview](screenshots/03-first-playbooks/13-template-20-launch-preview.png)
+
+**Rolling patch with reboot and post-check**
+
+![Rolling patch with reboot and post-check](screenshots/03-first-playbooks/14-job-20-output.png)
+
+## Phases 4 and 5: ops-trigger and the staged patching workflow
+
+Folder: `docs/screenshots/04-ops-trigger-and-patching/`
+
+**ops-trigger form for 10 Health check**
+
+![ops-trigger form for 10 Health check](screenshots/04-ops-trigger-and-patching/01-ops-trigger-form-10.png)
+
+**ops-trigger run summary**
+
+![ops-trigger run summary](screenshots/04-ops-trigger-and-patching/02-ops-trigger-run-10.png)
+
+**ops-trigger form for 21 Patch Linux DEV (dry run)**
+
+![ops-trigger form for 21 Patch Linux DEV (dry run)](screenshots/04-ops-trigger-and-patching/03-ops-trigger-form-21.png)
+
+**Dry run summary**
+
+![Dry run summary](screenshots/04-ops-trigger-and-patching/04-ops-trigger-run-21.png)
+
+**ops-trigger form for 30 Snapshot disks**
+
+![ops-trigger form for 30 Snapshot disks](screenshots/04-ops-trigger-and-patching/05-ops-trigger-form-30.png)
+
+**Snapshot job summary**
+
+![Snapshot job summary](screenshots/04-ops-trigger-and-patching/06-ops-trigger-run-30.png)
+
+**Pre-patch snapshots of the dev disks**
+
+![Pre-patch snapshots of the dev disks](screenshots/04-ops-trigger-and-patching/07-gcp-snapshots-dev.png)
+
+**Workflow 50 Staged patching**
+
+![Workflow 50 Staged patching](screenshots/04-ops-trigger-and-patching/08-workflow-50-details.png)
+
+**Workflow graph: precheck, snapshot, patch, verify, approve, prod**
+
+![Workflow graph: precheck, snapshot, patch, verify, approve, prod](screenshots/04-ops-trigger-and-patching/09-workflow-50-graph.png)
+
+**GitHub asks for production approval**
+
+![GitHub asks for production approval](screenshots/04-ops-trigger-and-patching/10-github-production-review.png)
+
+**Deployment approved**
+
+![Deployment approved](screenshots/04-ops-trigger-and-patching/11-github-production-approved.png)
+
+**AWX workflow approval: Promote patching to prod?**
+
+![AWX workflow approval: Promote patching to prod?](screenshots/04-ops-trigger-and-patching/12-awx-workflow-approval.png)
+
+**Workflow finished, every node green**
+
+![Workflow finished, every node green](screenshots/04-ops-trigger-and-patching/13-workflow-50-complete.png)
+
+**Dev and prod snapshots taken before patching**
+
+![Dev and prod snapshots taken before patching](screenshots/04-ops-trigger-and-patching/14-gcp-snapshots-all.png)
+
+## Phases 6 and 8: self-healing and provisioning callback
+
+Folder: `docs/screenshots/05-self-healing-and-onboarding/`
+
+**infra run: IAM condition built from the fleet map**
+
+![infra run: IAM condition built from the fleet map](screenshots/05-self-healing-and-onboarding/01-infra-fleet-iam-condition.png)
+
+**awx-config applied**
+
+![awx-config applied](screenshots/05-self-healing-and-onboarding/02-awx-config-run.png)
+
+**Stop web-dev-02; the bridge launches the heal job**
+
+![Stop web-dev-02; the bridge launches the heal job](screenshots/05-self-healing-and-onboarding/03-self-heal-demo.png)
+
+**awx-config for Phase 8 (template 45 and bridge permissions)**
+
+![awx-config for Phase 8 (template 45 and bridge permissions)](screenshots/05-self-healing-and-onboarding/04-awx-config-phase8.png)
+
+**infra run: add app-dev-02 to the fleet**
+
+![infra run: add app-dev-02 to the fleet](screenshots/05-self-healing-and-onboarding/05-infra-add-app-dev-02.png)
+
+**Onboarding job started by the audit-log event**
+
+![Onboarding job started by the audit-log event](screenshots/05-self-healing-and-onboarding/06-job-45-onboard-output.png)
+
+## Phase 3a: lint, Molecule and CIS hardening
+
+Folder: `docs/screenshots/06-hardening-and-lint/`
+
+**ansible-lint and Molecule jobs green**
+
+![ansible-lint and Molecule jobs green](screenshots/06-hardening-and-lint/01-lint-molecule-green.png)
+
+**lint workflow run, both jobs green**
+
+![lint workflow run, both jobs green](screenshots/06-hardening-and-lint/02-lint-molecule-green-2.png)
+
+**ops-trigger form for 61 Harden Linux DEV (dry run)**
+
+![ops-trigger form for 61 Harden Linux DEV (dry run)](screenshots/06-hardening-and-lint/03-ops-trigger-form-61.png)
+
+**Dry run summary**
+
+![Dry run summary](screenshots/06-hardening-and-lint/04-ops-trigger-run-61.png)
+
+**Dry run output in check mode**
+
+![Dry run output in check mode](screenshots/06-hardening-and-lint/05-job-153-dry-run.png)
+
+**ops-trigger form for 60 Harden Linux (dev)**
+
+![ops-trigger form for 60 Harden Linux (dev)](screenshots/06-hardening-and-lint/06-ops-trigger-form-60-dev.png)
+
+**Hardening dev run summary**
+
+![Hardening dev run summary](screenshots/06-hardening-and-lint/07-ops-trigger-run-60-dev.png)
+
+**Hardening applied to dev**
+
+![Hardening applied to dev](screenshots/06-hardening-and-lint/08-job-159-harden-dev.png)
+
+**ops-trigger form: connectivity check after hardening**
+
+![ops-trigger form: connectivity check after hardening](screenshots/06-hardening-and-lint/09-ops-trigger-form-00.png)
+
+**Connectivity check summary**
+
+![Connectivity check summary](screenshots/06-hardening-and-lint/10-ops-trigger-run-00.png)
+
+**AWX still logs in after hardening**
+
+![AWX still logs in after hardening](screenshots/06-hardening-and-lint/11-job-165-connectivity-after-hardening.png)
+
+**ops-trigger form for 60 Harden Linux (prod)**
+
+![ops-trigger form for 60 Harden Linux (prod)](screenshots/06-hardening-and-lint/12-ops-trigger-form-60-prod.png)
+
+**Hardening prod run summary**
+
+![Hardening prod run summary](screenshots/06-hardening-and-lint/13-ops-trigger-run-60-prod.png)
+
+**Hardening applied to prod**
+
+![Hardening applied to prod](screenshots/06-hardening-and-lint/14-job-177-harden-prod.png)
+
+**Hardening the whole fleet, run summary**
+
+![Hardening the whole fleet, run summary](screenshots/06-hardening-and-lint/15-ops-trigger-run-60-all.png)
+
+**Second run: changed=0 on every host (idempotent)**
+
+![Second run: changed=0 on every host (idempotent)](screenshots/06-hardening-and-lint/16-job-189-idempotent.png)
+
+## Phase 3b: custom execution environment
+
+Folder: `docs/screenshots/07-execution-environment/`
+
+**infra run: Artifact Registry**
+
+![infra run: Artifact Registry](screenshots/07-execution-environment/01-infra-registry.png)
+
+**awx-config registers the execution environment**
+
+![awx-config registers the execution environment](screenshots/07-execution-environment/02-awx-config-ee.png)
+
+**ee-build pushes the image to Artifact Registry**
+
+![ee-build pushes the image to Artifact Registry](screenshots/07-execution-environment/03-ee-build.png)
+
+**awx-config: allow a limit on template 05**
+
+![awx-config: allow a limit on template 05](screenshots/07-execution-environment/04-awx-config-allow-limit-05.png)
+
+## Phase 9: optional HTTPS entry
+
+Folder: `docs/screenshots/08-https-ingress/`
+
+**infra run including the ingress stack**
+
+![infra run including the ingress stack](screenshots/08-https-ingress/01-infra-ingress-apply.png)
+
+**A record for awx at the DNS host**
+
+![A record for awx at the DNS host](screenshots/08-https-ingress/02-hostinger-dns-a-record.png)
+
+**Load balancer IP and DNS lookup**
+
+![Load balancer IP and DNS lookup](screenshots/08-https-ingress/03-cli-ingress-ip-nslookup.png)
+
+**Managed certificate: PROVISIONING, then ACTIVE**
+
+![Managed certificate: PROVISIONING, then ACTIVE](screenshots/08-https-ingress/04-cli-certificate-provisioning-active.png)
+
+**AWX login over HTTPS**
+
+![AWX login over HTTPS](screenshots/08-https-ingress/05-awx-login-https.png)
+
+**AWX dashboard at https://awx.gcpcloudhub.in**
+
+![AWX dashboard at https://awx.gcpcloudhub.in](screenshots/08-https-ingress/06-awx-dashboard-https.png)
+
+## Phase 8: notifications (7b)
+
+Folder: `docs/screenshots/09-notifications/`
+
+**Repository variables (AWX_DOMAIN and allow-list)**
+
+![Repository variables (AWX_DOMAIN and allow-list)](screenshots/09-notifications/01-github-actions-variables.png)
+
+**Notification template Ops alerts (webhook)**
+
+![Notification template Ops alerts (webhook)](screenshots/09-notifications/02-awx-notification-template.png)
+
+**Notification template with the Test button**
+
+![Notification template with the Test button](screenshots/09-notifications/03-awx-notification-test-button.png)
+
+**Template 45 Onboard new VM, launch**
+
+![Template 45 Onboard new VM, launch](screenshots/09-notifications/04-template-45-launch.png)
+
+**Discord: failed job alert**
+
+![Discord: failed job alert](screenshots/09-notifications/05-discord-failed-alert.png)
+
+**Job 218 succeeded (00 Connectivity check)**
+
+![Job 218 succeeded (00 Connectivity check)](screenshots/09-notifications/06-job-218-success-output.png)
+
+**Discord: failed and succeeded alerts with real AWX links**
+
+![Discord: failed and succeeded alerts with real AWX links](screenshots/09-notifications/07-discord-failed-and-success-alerts.png)
