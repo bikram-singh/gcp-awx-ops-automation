@@ -59,8 +59,20 @@ resource "google_project_iam_member" "awx_snapshot" {
   member  = "serviceAccount:${google_service_account.awx_inventory.email}"
 }
 
-# Lets AWX start a stopped fleet VM (Phase 6 self-healing). The binding is conditional, so it only works on
-# VMs named like the fleet (web-*, app-*, db-*) and never on the GKE nodes. IAM conditions have no regex support.
+# Lets AWX start a stopped fleet VM (Phase 6 self-healing). The binding is conditional: it only applies to the
+# VMs in var.fleet, never to the GKE nodes or anything else in the project. IAM conditions support only
+# ==, startsWith, endsWith and extract on resource names (no regex or contains), so the condition lists each VM.
+locals {
+  fleet_name_checks = [
+    for name, vm in var.fleet :
+    "resource.name.endsWith('/zones/${local.region}-${vm.zone}/instances/${name}')"
+  ]
+  fleet_start_condition = format(
+    "resource.type == 'compute.googleapis.com/Instance' && (%s)",
+    join(" || ", local.fleet_name_checks)
+  )
+}
+
 resource "google_project_iam_member" "awx_vm_start" {
   project = local.project_id
   role    = "roles/compute.instanceAdmin.v1"
@@ -69,7 +81,7 @@ resource "google_project_iam_member" "awx_vm_start" {
   condition {
     title       = "fleet-vms-only"
     description = "Only the managed fleet VMs, not the GKE nodes"
-    expression  = "resource.type == 'compute.googleapis.com/Instance' && (resource.name.contains('/instances/web-') || resource.name.contains('/instances/app-') || resource.name.contains('/instances/db-'))"
+    expression  = local.fleet_start_condition
   }
 }
 

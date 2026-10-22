@@ -20,7 +20,7 @@ VM stopped (gcloud, console, API)
 | The bridge **pulls** from Pub/Sub inside the cluster | AWX stays private (ClusterIP). No public URL, no load balancer, no VPC connector, no Cloud Function to secure. Events flow in, nothing flows out to the internet |
 | Audit-log **sink** instead of a Monitoring alert | The log entry names the VM and zone directly, arrives in seconds, and needs no agent on the VM. An alert policy only carries a numeric instance ID |
 | A **least-privilege AWX user** (`selfheal`) | The bridge can run one template and nothing else. It cannot read credentials or change anything in AWX |
-| **Conditional** IAM for starting VMs | AWX may start only VMs whose names start with `web-`, `app-` or `db-`, never the GKE nodes |
+| **Conditional** IAM for starting VMs | AWX may start only the VMs listed in the fleet map, never the GKE nodes. IAM conditions have no regex, so the condition is generated from the map |
 | **Opt-out label** | `selfheal=off` on a VM tells the job to leave it stopped. Only VMs with `ansible_managed=true` are ever touched |
 | Standard library only, code in a ConfigMap | No image to build or store. The bridge runs on a stock Python image |
 
@@ -86,13 +86,13 @@ Remove it later with `remove-labels --labels=selfheal`. Do this **before** you s
 | Bridge log: `awx_lookup_error` | Template 40 is missing. Run **awx-config** again |
 | Bridge log: `loop_error` with 403 from Pub/Sub | The permissions can take a few minutes to take effect after the first apply. Wait and watch the log |
 | Stopped a VM, nothing happens | Check the sink exists (`gcloud logging sinks describe awx-selfheal-vm-stop`), the VM name matches `(web\|app\|db)-(dev\|prod)-N`, and the bridge pod is running |
-| Heal job fails with 403 on start | The conditional permission from the `fleet` stack is not applied, or the VM name does not match the pattern |
+| Heal job fails with 403 on start | The conditional permission from the `fleet` stack is not applied, or the VM is not in the fleet map (the condition is generated from it) |
 | Heal job says `optout` or `unmanaged` | The VM has `selfheal=off`, or lacks the label `ansible_managed=true` |
 | `infra`: the `selfheal` stack fails on the Pub/Sub API | The API is still being enabled. Rerun the workflow |
 
 ## Notes and trade-offs
 
-- **`compute.instanceAdmin.v1` is broad**, even with the name condition, and every AWX job pod shares the same service account. In production, use a custom role that has only start, get and list, plus a separate service account for the heal job.
+- **`compute.instanceAdmin.v1` is broad**, even with the per-VM condition, and every AWX job pod shares the same service account. In production, use a custom role that has only start, get and list, plus a separate service account for the heal job.
 - **One event, one job.** Events older than an hour are dropped. Two stops in a row queue two jobs, and the second finds the VM running and does nothing.
 - **Not run end to end yet.** The playbook and the bridge were tested against mock servers in a sandbox (start, opt-out, unmanaged, already running, missing, still stopping, AWX errors, redelivery). The Terraform was formatted and reviewed but not applied. The first run in your project is the real test, so send me the log if a step fails.
 - **Phase 6b, the provisioning callback**, comes next: new VMs call AWX at boot to configure themselves. That needs a way for VMs to reach AWX (an internal load balancer), so it is a separate step.
